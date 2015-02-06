@@ -1,0 +1,373 @@
+/*
+Copyright (c) 2015, Yahoo! Inc. All rights reserved.
+Copyrights licensed under the New BSD License.
+See the accompanying LICENSE file for terms.
+
+Authors: Nera Liu <neraliu@yahoo-inc.com>
+         Adonis Fung <adon@yahoo-inc.com>
+         Albert Yu <albertyu@yahoo-inc.com>
+*/
+(function() {
+
+    require("mocha");
+
+    var expect = require('expect.js');
+    var filter = require('../../src/xss-filters');
+    var testutils = require('../utils.js');
+
+    describe("xss-filters: existence tests", function() {
+
+        it('filter inHTMLData exists', function() {
+            expect(filter.inHTMLData).to.be.ok();
+        });
+        it('filter inHTMLComment exists', function() {
+            expect(filter.inHTMLComment).to.be.ok();
+        });
+        it('filter inSingleQuotedAttr exists', function() {
+            expect(filter.inSingleQuotedAttr).to.be.ok();
+        });
+        it('filter inDoubleQuotedAttr exists', function() {
+            expect(filter.inDoubleQuotedAttr).to.be.ok();
+        });
+        it('filter inUnQuotedAttr exists', function() {
+            expect(filter.inUnQuotedAttr).to.be.ok();
+        });
+
+        it('filter uriInSingleQuotedAttr exists', function() {
+            expect(filter.uriInSingleQuotedAttr).to.be.ok();
+        });
+        it('filter uriInDoubleQuotedAttr exists', function() {
+            expect(filter.uriInDoubleQuotedAttr).to.be.ok();
+        });
+        it('filter uriInUnQuotedAttr exists', function() {
+            expect(filter.uriInUnQuotedAttr).to.be.ok();
+        });
+        it('filter uriInHTMLData exists', function() {
+            expect(filter.uriInHTMLData).to.be.ok();
+        });
+        it('filter uriInHTMLComment exists', function() {
+            expect(filter.uriInHTMLComment).to.be.ok();
+        });
+
+
+        it('filter uriPathInSingleQuotedAttr exists', function() {
+            expect(filter.uriPathInSingleQuotedAttr).to.be.ok();
+        });
+        it('filter uriPathInDoubleQuotedAttr exists', function() {
+            expect(filter.uriPathInDoubleQuotedAttr).to.be.ok();
+        });
+        it('filter uriPathInUnQuotedAttr exists', function() {
+            expect(filter.uriPathInUnQuotedAttr).to.be.ok();
+        });
+        it('filter uriPathInHTMLData exists', function() {
+            expect(filter.uriPathInHTMLData).to.be.ok();
+        });
+        it('filter uriPathInHTMLComment exists', function() {
+            expect(filter.uriPathInHTMLComment).to.be.ok();
+        });
+
+
+        it('filter uriQueryInSingleQuotedAttr exists', function() {
+            expect(filter.uriQueryInSingleQuotedAttr).to.be.ok();
+        });
+        it('filter uriQueryInDoubleQuotedAttr exists', function() {
+            expect(filter.uriQueryInDoubleQuotedAttr).to.be.ok();
+        });
+        it('filter uriQueryInUnQuotedAttr exists', function() {
+            expect(filter.uriQueryInUnQuotedAttr).to.be.ok();
+        });
+        it('filter uriQueryInHTMLData exists', function() {
+            expect(filter.uriQueryInHTMLData).to.be.ok();
+        });
+        it('filter uriQueryInHTMLComment exists', function() {
+            expect(filter.uriQueryInHTMLComment).to.be.ok();
+        });
+
+
+        it('filter uriComponentInSingleQuotedAttr exists', function() {
+            expect(filter.uriComponentInSingleQuotedAttr).to.be.ok();
+        });
+        it('filter uriComponentInDoubleQuotedAttr exists', function() {
+            expect(filter.uriComponentInDoubleQuotedAttr).to.be.ok();
+        });
+        it('filter uriComponentInUnQuotedAttr exists', function() {
+            expect(filter.uriComponentInUnQuotedAttr).to.be.ok();
+        });
+        it('filter uriComponentInHTMLData exists', function() {
+            expect(filter.uriComponentInHTMLData).to.be.ok();
+        });
+        it('filter uriComponentInHTMLComment exists', function() {
+            expect(filter.uriComponentInHTMLComment).to.be.ok();
+        });
+
+
+        it('filter uriFragmentInSingleQuotedAttr exists', function() {
+            expect(filter.uriFragmentInSingleQuotedAttr).to.be.ok();
+        });
+        it('filter uriFragmentInDoubleQuotedAttr exists', function() {
+            expect(filter.uriFragmentInDoubleQuotedAttr).to.be.ok();
+        });
+        it('filter uriFragmentInUnQuotedAttr exists', function() {
+            expect(filter.uriFragmentInUnQuotedAttr).to.be.ok();
+        });
+        it('filter uriFragmentInHTMLData exists', function() {
+            expect(filter.uriFragmentInHTMLData).to.be.ok();
+        });
+        it('filter uriFragmentInHTMLComment exists', function() {
+            expect(filter.uriFragmentInHTMLComment).to.be.ok();
+        });
+
+    });
+
+    describe("xss-filters: alias tests", function() {
+        it('filter uriQueryInSingleQuotedAttr being an alias of uriPathInSingleQuotedAttr', function() {
+            expect(filter.uriQueryInSingleQuotedAttr).to.eql(filter.uriPathInSingleQuotedAttr);
+        });
+        it('filter uriQueryInDoubleQuotedAttr being an alias of uriPathInDoubleQuotedAttr', function() {
+            expect(filter.uriQueryInDoubleQuotedAttr).to.eql(filter.uriPathInDoubleQuotedAttr);
+        });
+        it('filter uriQueryInUnQuotedAttr being an alias of uriPathInUnQuotedAttr', function() {
+            expect(filter.uriQueryInUnQuotedAttr).to.eql(filter.uriPathInUnQuotedAttr);
+        });
+        it('filter uriQueryInHTMLData being an alias of uriPathInHTMLData', function() {
+            expect(filter.uriQueryInHTMLData).to.eql(filter.uriPathInHTMLData);
+        });
+        it('filter uriQueryInHTMLComment being an alias of uriPathInHTMLComment', function() {
+            expect(filter.uriQueryInHTMLComment).to.eql(filter.uriPathInHTMLComment);
+        });
+
+
+        it('filter uriFragmentInHTMLData being an alias of uriComponentInHTMLData', function() {
+            expect(filter.uriFragmentInHTMLData).to.eql(filter.uriComponentInHTMLData);
+        });
+        it('filter uriFragmentInHTMLComment being an alias of uriComponentInHTMLComment', function() {
+            expect(filter.uriFragmentInHTMLComment).to.eql(filter.uriComponentInHTMLComment);
+        });
+    });
+
+    describe("xss-filters: error tests", function() {
+
+        it('filters handling of undefined input', function() {
+            for (var f in filter)
+                expect(filter[f]()).to.eql('undefined');
+        });
+    });
+
+    describe("xss-filters: state transition tests", function() {
+        
+        /*
+         * reference:
+         * https://html.spec.whatwg.org/multipage/syntax.html#data-state
+         */
+        it('filter inHTMLData state transition test', function() {
+            testutils.test_yd(filter.inHTMLData, ['foo&&lt;>\'"']);
+        });
+
+        /*
+         * reference
+         * https://html.spec.whatwg.org/multipage/syntax.html#comment-state
+         */
+        it('filter inHTMLComment state transition test', function() {
+            testutils.test_yc(filter.inHTMLComment, [
+                '-- > --! > <!--[if IE] ><script>alert("yahoo\'s filters")</script>', 
+                'foo-- ', 
+                'foo--! ', 
+                '[if IE] ', 
+                'foo- ', 
+                'foo- ']);
+        });
+
+
+        /*
+         * reference
+         * https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(single-quoted)-state
+         */
+        it('filter inSingleQuotedAttr state transition test', function() {
+            testutils.test_yav(filter.inSingleQuotedAttr, [
+                'foo&<>&#39;" \t\n\f', '\f', '',
+                '&#39;&#39;', ' &#39;&#39;', '\t&#39;&#39;', '\n&#39;&#39;', '\f&#39;&#39;',
+                '""',         ' ""',         '\t""',         '\n""',         '\f""']);
+        });
+
+        /*
+         * reference
+         * https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(double-quoted)-state
+         */
+        it('filter inDoubleQuotedAttr state transition test', function() {
+            testutils.test_yav(filter.inDoubleQuotedAttr, [
+                'foo&<>\'&quot; \t\n\f', '\f', '',
+                "''",           " ''",           "\t''",           "\n''",           "\f''", 
+                '&quot;&quot;', ' &quot;&quot;', '\t&quot;&quot;', '\n&quot;&quot;', '\f&quot;&quot;']);
+        });
+        
+        /*
+         * reference
+         * https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
+         */
+        it('filter inUnQuotedAttr state transition test', function() {
+            testutils.test_yav(filter.inUnQuotedAttr, [
+                'foo&<&gt;\'"&#32;&Tab;&NewLine;&#12;', '&#12;', '\u0000',
+                "&#39;'",  "&#32;''", "&Tab;''", "&NewLine;''", "&#12;''",
+                '&quot;"', '&#32;""', '&Tab;""', '&NewLine;""', '&#12;""']);
+        });
+        
+
+
+        
+        it('filter uriInSingleQuotedAttr state transition test', function() {
+            // encodeURI('foo&<>\'" \t\n\f') = foo&%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriInSingleQuotedAttr, [
+                'foo&%3C%3E&#39;%22%20%09%0A%0C', '%0C', '',
+                '&#39;&#39;', '%20&#39;&#39;', '%09&#39;&#39;', '%0A&#39;&#39;', '%0C&#39;&#39;',
+                '%22%22',     '%20%22%22',     '%09%22%22',   '%0A%22%22',     '%0C%22%22']);
+            testutils.test_yufull(filter.uriInSingleQuotedAttr, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yubl(filter.uriInSingleQuotedAttr);
+        });
+        it('filter uriInDoubleQuotedAttr state transition test', function() {
+            // encodeURI('foo&<>\'" \t\n\f') = foo&%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriInDoubleQuotedAttr, [
+                'foo&%3C%3E\'%22%20%09%0A%0C', '%0C', '',
+                '\'\'',   '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22', '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yufull(filter.uriInDoubleQuotedAttr, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yubl(filter.uriInDoubleQuotedAttr);
+        });
+        it('filter uriInUnQuotedAttr state transition test', function() {
+            // encodeURI('foo&<>\'" \t\n\f') = foo&%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriInUnQuotedAttr, [
+                'foo&%3C%3E\'%22%20%09%0A%0C', '%0C', '\u0000',
+                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yufull(filter.uriInUnQuotedAttr, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yubl(filter.uriInUnQuotedAttr);
+        });
+        it('filter uriInHTMLData state transition test', function() {
+            testutils.test_yd(filter.uriInHTMLData, ['foo&%3C%3E\'%22']);
+            testutils.test_yufull(filter.uriInHTMLData, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+        });
+        it('filter uriInHTMLComment state transition test', function() {
+            testutils.test_yc(filter.uriInHTMLComment, [
+                '--%3E%20--!%3E%20%3C!--%5Bif%20IE%5D%3E%3Cscript%3Ealert(%22yahoo\'s%20filters%22)%3C/script%3E', 
+                'foo-- ', 
+                'foo--! ', 
+                '%5Bif%20IE%5D', 
+                'foo- ', 
+                'foo- ']);
+            testutils.test_yufull(filter.uriInHTMLComment, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334] ']);
+        });
+
+
+
+        it('filter uriPathInSingleQuotedAttr state transition test', function() {
+            // encodeURI('foo&<>\'" \t\n\f') = foo&%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriPathInSingleQuotedAttr, [
+                'foo&%3C%3E&#39;%22%20%09%0A%0C', '%0C', '',
+                '&#39;&#39;', '%20&#39;&#39;', '%09&#39;&#39;', '%0A&#39;&#39;', '%0C&#39;&#39;',
+                '%22%22',     '%20%22%22',     '%09%22%22',   '%0A%22%22',     '%0C%22%22']);
+            testutils.test_yu(filter.uriPathInSingleQuotedAttr);
+            testutils.test_yubl(filter.uriPathInSingleQuotedAttr);
+        });
+        it('filter uriPathInDoubleQuotedAttr state transition test', function() {
+            // encodeURI('foo&<>\'" \t\n\f') = foo&%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriPathInDoubleQuotedAttr, [
+                'foo&%3C%3E\'%22%20%09%0A%0C', '%0C', '',
+                '\'\'',   '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22', '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yu(filter.uriPathInDoubleQuotedAttr);
+            testutils.test_yubl(filter.uriPathInDoubleQuotedAttr);
+        });
+        it('filter uriPathInUnQuotedAttr state transition test', function() {
+            // encodeURI('foo&<>\'" \t\n\f') = foo&%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriPathInUnQuotedAttr, [
+                'foo&%3C%3E\'%22%20%09%0A%0C', '%0C', '\u0000',
+                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yu(filter.uriPathInUnQuotedAttr);
+            testutils.test_yubl(filter.uriPathInUnQuotedAttr);
+        });
+        it('filter uriPathInHTMLData state transition test', function() {
+            testutils.test_yd(filter.uriPathInHTMLData, ['foo&%3C%3E\'%22']);
+            testutils.test_yu(filter.uriPathInHTMLData);
+        });
+        it('filter uriPathInHTMLComment state transition test', function() {
+            testutils.test_yc(filter.uriPathInHTMLComment, [
+                '--%3E%20--!%3E%20%3C!--%5Bif%20IE%5D%3E%3Cscript%3Ealert(%22yahoo\'s%20filters%22)%3C/script%3E', 
+                'foo-- ', 
+                'foo--! ', 
+                '%5Bif%20IE%5D', 
+                'foo- ', 
+                'foo- ']);
+            testutils.test_yu(filter.uriPathInHTMLComment);
+        });
+
+
+
+        it('filter uriComponentInSingleQuotedAttr state transition test', function() {
+            // encodeURIComponent('foo&<>\'" \t\n\f') = foo%26%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriComponentInSingleQuotedAttr, [
+                'foo%26%3C%3E&#39;%22%20%09%0A%0C', '%0C', '',
+                '&#39;&#39;', '%20&#39;&#39;', '%09&#39;&#39;', '%0A&#39;&#39;', '%0C&#39;&#39;',
+                '%22%22',     '%20%22%22',     '%09%22%22',   '%0A%22%22',     '%0C%22%22']);
+            testutils.test_yuc(filter.uriComponentInSingleQuotedAttr);
+        });
+        it('filter uriComponentInDoubleQuotedAttr state transition test', function() {
+            // encodeURIComponent('foo&<>\'" \t\n\f') = foo%26%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriComponentInDoubleQuotedAttr, [
+                'foo%26%3C%3E\'%22%20%09%0A%0C', '%0C', '',
+                '\'\'',   '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22', '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yuc(filter.uriComponentInDoubleQuotedAttr);
+        });
+        it('filter uriComponentInUnQuotedAttr state transition test', function() {
+            // encodeURIComponent('foo&<>\'" \t\n\f') = foo%26%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriComponentInUnQuotedAttr, [
+                'foo%26%3C%3E\'%22%20%09%0A%0C', '%0C', '\u0000',
+                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yuc(filter.uriComponentInUnQuotedAttr);
+        });
+        it('filter uriComponentInHTMLData state transition test', function() {
+            testutils.test_yd(filter.uriComponentInHTMLData, ['foo%26%3C%3E\'%22']);
+            testutils.test_yuc(filter.uriComponentInHTMLData);
+        });
+        it('filter uriComponentInHTMLComment state transition test', function() {
+            testutils.test_yc(filter.uriComponentInHTMLComment, [
+                '--%3E%20--!%3E%20%3C!--%5Bif%20IE%5D%3E%3Cscript%3Ealert(%22yahoo\'s%20filters%22)%3C%2Fscript%3E', 
+                'foo-- ', 
+                'foo--! ', 
+                '%5Bif%20IE%5D', 
+                'foo- ', 
+                'foo- ']);
+            testutils.test_yuc(filter.uriComponentInHTMLComment);
+        });
+
+
+
+        it('filter uriFragmentInSingleQuotedAttr state transition test', function() {
+            // encodeuriFragment('foo&<>\'" \t\n\f') = foo%26%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriFragmentInSingleQuotedAttr, [
+                'foo%26%3C%3E&#39;%22%20%09%0A%0C', '%0C', '',
+                '&#39;&#39;', '%20&#39;&#39;', '%09&#39;&#39;', '%0A&#39;&#39;', '%0C&#39;&#39;',
+                '%22%22',     '%20%22%22',     '%09%22%22',   '%0A%22%22',     '%0C%22%22']);
+            testutils.test_yuc(filter.uriFragmentInSingleQuotedAttr);
+        });
+        it('filter uriFragmentInDoubleQuotedAttr state transition test', function() {
+            // encodeuriFragment('foo&<>\'" \t\n\f') = foo%26%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriFragmentInDoubleQuotedAttr, [
+                'foo%26%3C%3E\'%22%20%09%0A%0C', '%0C', '',
+                '\'\'',   '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22', '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yuc(filter.uriFragmentInDoubleQuotedAttr);
+        });
+        it('filter uriFragmentInUnQuotedAttr state transition test', function() {
+            // encodeuriFragment('foo&<>\'" \t\n\f') = foo%26%3C%3E'%22%20%09%0A%0C
+            testutils.test_yav(filter.uriFragmentInUnQuotedAttr, [
+                'foo%26%3C%3E\'%22%20%09%0A%0C', '%0C', '\u0000',
+                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22']);
+            testutils.test_yuc(filter.uriFragmentInUnQuotedAttr);
+        });
+        
+
+    });
+}());
