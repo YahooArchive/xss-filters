@@ -125,7 +125,7 @@ exports.yavs = function (s) {
 // FOR DETAILS, refer to inUnQuotedAttr()
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-exports.yavu = function (s, preserveEmptyString) {
+exports.yavu = function (s) {
     if (typeof s !== 'string') {
         s = String(s);
     }
@@ -152,7 +152,7 @@ exports.yavu = function (s, preserveEmptyString) {
     // unquoted attribute value state.
     //
     // Example:
-    // <input value={{yav(s, exports.VALUE_UNQUOTED)}} name="passwd"/>
+    // <input value={{yavu s}} name="passwd"/>
     //
     // Rationale 1: our belief is that developers wouldn't expect an 
     //   empty string would result in ' name="firstname"' rendered as 
@@ -163,30 +163,12 @@ exports.yavu = function (s, preserveEmptyString) {
     //   the comment state, which therefore will not mess up later 
     //   contexts.
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-    if (!preserveEmptyString && s === '') {
+    if (s === '') {
         return '\u0000';
     }
 
     return s;
 };
-
-exports.VALUE_DOUBLE_QUOTED = 1;
-exports.VALUE_SINGLE_QUOTED = 2;
-exports.VALUE_UNQUOTED      = 3;
-exports.yav = function (s, mode, preserveUnquotedEmptyString) {
-    if (typeof mode !== 'number' || !(mode === 1 || mode === 2 || mode === 3)) {
-        throw new Error('yav: mode must be either VALUE_DOUBLE_QUOTED, VALUE_SINGLE_QUOTED, or VALUE_UNQUOTED');
-    }
-    switch(mode) {
-        case exports.VALUE_DOUBLE_QUOTED:
-            return exports.yavd(s);
-        case exports.VALUE_SINGLE_QUOTED:
-            return exports.yavs(s);
-        case exports.VALUE_UNQUOTED:
-            return exports.yavu(s, preserveUnquotedEmptyString);
-    }
-};
-
 
 exports.yu = encodeURI;
 exports.yuc = encodeURIComponent;
@@ -298,7 +280,7 @@ var URI_BLACKLIST = null,
  *     We already made it clear in the DISCLAIMER that anything involving <script>, <style>, and <svg> tags won't be taken care of
  *  Finally, we don't care the use of data: protocol
  */
-// Notice that yubl MUST BE APPLIED LAST, and will not be used independently (expected output from encodeURI/encodeURIComponent and yav)
+// Notice that yubl MUST BE APPLIED LAST, and will not be used independently (expected output from encodeURI/encodeURIComponent and yavd/yavs/yavu)
 // This is used to disable JS execution capabilities by prefixing x- to ^javascript: or ^vbscript: that possibly could trigger script execution in URI attribute context
 exports.yubl = function (s) {
     

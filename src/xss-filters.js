@@ -14,6 +14,11 @@ var privFilters = require('./private-xss-filters');
 
 /* chaining filters */
 
+var yav = [privFilters.yavd, privFilters.yavs, privFilters.yavu];
+privFilters.yav = function (s, mode) {
+    return yav[mode](s);
+};
+
 // uriInAttr
 privFilters.uriInAttr = function (s, mode) {
     return privFilters.yubl(privFilters.yav(privFilters.yufull(s), mode));
@@ -183,7 +188,7 @@ exports.inUnQuotedAttr = privFilters.yavu;
 * 
 */
 exports.uriInSingleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriInAttr(s, 1);
 };
 
 /**
@@ -210,7 +215,7 @@ exports.uriInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriInDoubleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriInAttr(s, 0);
 };
 
 
@@ -238,7 +243,7 @@ exports.uriInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriInUnQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriInAttr(s, 2);
 };
 
 /**
@@ -320,7 +325,7 @@ exports.uriInHTMLComment = function (s) {
 * 
 */
 exports.uriPathInSingleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriPathInAttr(s, 1);
 };
 
 /**
@@ -346,7 +351,7 @@ exports.uriPathInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriPathInDoubleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriPathInAttr(s, 0);
 };
 
 
@@ -373,7 +378,7 @@ exports.uriPathInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriPathInUnQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriPathInAttr(s, 2);
 };
 
 /**
@@ -493,7 +498,7 @@ exports.uriQueryInHTMLComment = exports.uriPathInHTMLComment;
 * 
 */
 exports.uriComponentInSingleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriComponentInAttr(s, 1);
 };
 
 /**
@@ -519,7 +524,7 @@ exports.uriComponentInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriComponentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriComponentInAttr(s, 0);
 };
 
 
@@ -546,7 +551,7 @@ exports.uriComponentInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriComponentInUnQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriComponentInAttr(s, 2);
 };
 
 /**
@@ -625,7 +630,7 @@ exports.uriComponentInHTMLComment = function (s) {
 * 
 */
 exports.uriFragmentInSingleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriFragmentInAttr(s, 1);
 };
 
 /**
@@ -651,7 +656,7 @@ exports.uriFragmentInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriFragmentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriFragmentInAttr(s, 0);
 };
 
 
@@ -677,7 +682,7 @@ exports.uriFragmentInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriFragmentInUnQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriFragmentInAttr(s, 2);
 };
 
 

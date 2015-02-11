@@ -126,7 +126,7 @@ exports.yavs = function (s) {
 // FOR DETAILS, refer to inUnQuotedAttr()
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-exports.yavu = function (s, preserveEmptyString) {
+exports.yavu = function (s) {
     if (typeof s !== 'string') {
         s = String(s);
     }
@@ -153,7 +153,7 @@ exports.yavu = function (s, preserveEmptyString) {
     // unquoted attribute value state.
     //
     // Example:
-    // <input value={{yav(s, exports.VALUE_UNQUOTED)}} name="passwd"/>
+    // <input value={{yav s}} name="passwd"/>
     //
     // Rationale 1: our belief is that developers wouldn't expect an 
     //   empty string would result in ' name="firstname"' rendered as 
@@ -164,30 +164,12 @@ exports.yavu = function (s, preserveEmptyString) {
     //   the comment state, which therefore will not mess up later 
     //   contexts.
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-    if (!preserveEmptyString && s === '') {
+    if (s === '') {
         return '\u0000';
     }
 
     return s;
 };
-
-exports.VALUE_DOUBLE_QUOTED = 1;
-exports.VALUE_SINGLE_QUOTED = 2;
-exports.VALUE_UNQUOTED      = 3;
-exports.yav = function (s, mode, preserveUnquotedEmptyString) {
-    if (typeof mode !== 'number' || !(mode === 1 || mode === 2 || mode === 3)) {
-        throw new Error('yav: mode must be either VALUE_DOUBLE_QUOTED, VALUE_SINGLE_QUOTED, or VALUE_UNQUOTED');
-    }
-    switch(mode) {
-        case exports.VALUE_DOUBLE_QUOTED:
-            return exports.yavd(s);
-        case exports.VALUE_SINGLE_QUOTED:
-            return exports.yavs(s);
-        case exports.VALUE_UNQUOTED:
-            return exports.yavu(s, preserveUnquotedEmptyString);
-    }
-};
-
 
 exports.yu = encodeURI;
 exports.yuc = encodeURIComponent;
@@ -299,7 +281,7 @@ var URI_BLACKLIST = null,
  *     We already made it clear in the DISCLAIMER that anything involving <script>, <style>, and <svg> tags won't be taken care of
  *  Finally, we don't care the use of data: protocol
  */
-// Notice that yubl MUST BE APPLIED LAST, and will not be used independently (expected output from encodeURI/encodeURIComponent and yav)
+// Notice that yubl MUST BE APPLIED LAST, and will not be used independently (expected output from encodeURI/encodeURIComponent and yavd/yavs/yavu)
 // This is used to disable JS execution capabilities by prefixing x- to ^javascript: or ^vbscript: that possibly could trigger script execution in URI attribute context
 exports.yubl = function (s) {
     
@@ -343,6 +325,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 var privFilters = require('./private-xss-filters');
 
 /* chaining filters */
+
+var yav = [privFilters.yavd, privFilters.yavs, privFilters.yavu];
+privFilters.yav = function (s, mode) {
+    return yav[mode](s);
+};
 
 // uriInAttr
 privFilters.uriInAttr = function (s, mode) {
@@ -513,7 +500,7 @@ exports.inUnQuotedAttr = privFilters.yavu;
 * 
 */
 exports.uriInSingleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriInAttr(s, 1);
 };
 
 /**
@@ -540,7 +527,7 @@ exports.uriInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriInDoubleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriInAttr(s, 0);
 };
 
 
@@ -568,7 +555,7 @@ exports.uriInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriInUnQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriInAttr(s, 2);
 };
 
 /**
@@ -650,7 +637,7 @@ exports.uriInHTMLComment = function (s) {
 * 
 */
 exports.uriPathInSingleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriPathInAttr(s, 1);
 };
 
 /**
@@ -676,7 +663,7 @@ exports.uriPathInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriPathInDoubleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriPathInAttr(s, 0);
 };
 
 
@@ -703,7 +690,7 @@ exports.uriPathInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriPathInUnQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriPathInAttr(s, 2);
 };
 
 /**
@@ -823,7 +810,7 @@ exports.uriQueryInHTMLComment = exports.uriPathInHTMLComment;
 * 
 */
 exports.uriComponentInSingleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriComponentInAttr(s, 1);
 };
 
 /**
@@ -849,7 +836,7 @@ exports.uriComponentInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriComponentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriComponentInAttr(s, 0);
 };
 
 
@@ -876,7 +863,7 @@ exports.uriComponentInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriComponentInUnQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriComponentInAttr(s, 2);
 };
 
 /**
@@ -955,7 +942,7 @@ exports.uriComponentInHTMLComment = function (s) {
 * 
 */
 exports.uriFragmentInSingleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, privFilters.VALUE_SINGLE_QUOTED);
+    return privFilters.uriFragmentInAttr(s, 1);
 };
 
 /**
@@ -981,7 +968,7 @@ exports.uriFragmentInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriFragmentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, privFilters.VALUE_DOUBLE_QUOTED);
+    return privFilters.uriFragmentInAttr(s, 0);
 };
 
 
@@ -1007,7 +994,7 @@ exports.uriFragmentInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriFragmentInUnQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, privFilters.VALUE_UNQUOTED);
+    return privFilters.uriFragmentInAttr(s, 2);
 };
 
 

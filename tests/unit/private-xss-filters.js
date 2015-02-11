@@ -26,9 +26,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter yc exists', function() {
             expect(filter.yc).to.be.ok();
         });
-        it('filter yav exists', function() {
-            expect(filter.yav).to.be.ok();
-        });
         it('filter yavd exists', function() {
             expect(filter.yavd).to.be.ok();
         });
@@ -92,11 +89,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
 
     describe("private-xss-filters: mapping tests", function() {
-        it('filter yav parameter options', function() {
-            expect(filter.VALUE_DOUBLE_QUOTED).to.eql(1);
-            expect(filter.VALUE_SINGLE_QUOTED).to.eql(2);
-            expect(filter.VALUE_UNQUOTED).to.eql(3);
-        });
 
         // TODO: remove the following mapping test when the mapping is removed
         it('filter yd exists', function() {
@@ -148,12 +140,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(function() { filter.yuc('foo\uD800'); }).to.throwError(/URI malformed/);
         });
 
-        it('filter yav missing mode test', function() {
-            expect(function() { filter.yav('123'); }).to.throwError(/yav: mode must be/);
-            expect(function() { filter.yav('123', 0); }).to.throwError(/yav: mode must be/);
-            expect(function() { filter.yav('123', 4); }).to.throwError(/yav: mode must be/);
-        });
-
         it('filters handling of undefined input', function() {
             expect(filter.y()).to.eql('undefined');
             expect(filter.yd()).to.eql('undefined');
@@ -162,10 +148,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yavd()).to.eql('undefined');
             expect(filter.yavs()).to.eql('undefined');
             expect(filter.yavu()).to.eql('undefined');
-            expect(filter.yav(undefined, filter.VALUE_SINGLE_QUOTED)).to.eql('undefined');
-            expect(filter.yav(undefined, filter.VALUE_DOUBLE_QUOTED)).to.eql('undefined');
-            expect(filter.yav(undefined, filter.VALUE_UNQUOTED)).to.eql('undefined');
-
 
             expect(filter.yu()).to.eql('undefined');
             expect(filter.yuc()).to.eql('undefined');
@@ -197,29 +179,22 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         });
 
         it('filter yav-single-quoted state transition test', function() {
-            testutils.test_yav(function (s) {return filter.yav(s, filter.VALUE_SINGLE_QUOTED);}, [
+            testutils.test_yav(filter.yavs, [
                 'foo&<>&#39;" \t\n\f', '\f', '',
                 '&#39;&#39;', ' &#39;&#39;', '\t&#39;&#39;', '\n&#39;&#39;', '\f&#39;&#39;',
                 '""',         ' ""',         '\t""',         '\n""',         '\f""']);
         });
 
         it('filter yav-double-quoted state transition test', function() {
-            testutils.test_yav(function (s) {return filter.yav(s, filter.VALUE_DOUBLE_QUOTED);}, [
+            testutils.test_yav(filter.yavd, [
                 'foo&<>\'&quot; \t\n\f', '\f', '',
                 "''",           " ''",           "\t''",           "\n''",           "\f''", 
                 '&quot;&quot;', ' &quot;&quot;', '\t&quot;&quot;', '\n&quot;&quot;', '\f&quot;&quot;']);
         });
         
         it('filter yav-unquoted state transition test', function() {
-            testutils.test_yav(function (s) {return filter.yav(s, filter.VALUE_UNQUOTED);}, [
+            testutils.test_yav(filter.yavu, [
                 'foo&<&gt;\'"&#32;&Tab;&NewLine;&#12;', '&#12;', '\u0000',
-                "&#39;'",  "&#32;''", "&Tab;''", "&NewLine;''", "&#12;''",
-                '&quot;"', '&#32;""', '&Tab;""', '&NewLine;""', '&#12;""']);
-        });
-
-        it('filter yav-unquoted preserveUnquotedEmptyString state transition test', function() {
-            testutils.test_yav(function (s) {return filter.yav(s, filter.VALUE_UNQUOTED, true);}, [
-                'foo&<&gt;\'"&#32;&Tab;&NewLine;&#12;', '&#12;', '',
                 "&#39;'",  "&#32;''", "&Tab;''", "&NewLine;''", "&#12;''",
                 '&quot;"', '&#32;""', '&Tab;""', '&NewLine;""', '&#12;""']);
         });

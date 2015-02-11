@@ -1,6 +1,6 @@
 {
   "name": "xss-filters",
-  "version": "0.99.9",
+  "version": "0.99.10",
   "licenses":[
     {
       "type" : "BSD",
