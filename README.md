@@ -81,6 +81,10 @@ To contribute, you will make changes in `src/` and `tests/`, followed by the fol
 - ```$ npm run-script docs``` to build the docs
 - ```$ npm run-script build``` to build the standalone JavaScript for client-side use
 
+Build
+-----
+[![Build Status](https://travis-ci.org/yahoo/xss-filters.svg?branch=master)](https://travis-ci.org/yahoo/xss-filters)
+
 License
 -------
 
