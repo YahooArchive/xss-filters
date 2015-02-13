@@ -153,7 +153,7 @@ exports.yavu = function (s) {
     // unquoted attribute value state.
     //
     // Example:
-    // <input value={{yav s}} name="passwd"/>
+    // <input value={{yavu s}} name="passwd"/>
     //
     // Rationale 1: our belief is that developers wouldn't expect an 
     //   empty string would result in ' name="firstname"' rendered as 
