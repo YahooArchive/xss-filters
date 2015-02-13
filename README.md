@@ -26,7 +26,7 @@ $ npm install xss-filters --save
 
 Require the secure filters, and you can then use it with/out your favorite tempating engine.
 ```javascript
-var express = require('express')();
+var express = require('express');
 var app = express();
 var xssFilters = require('xss-filters');
 
@@ -49,16 +49,16 @@ document.write('<h1> Hello, ' + xssFilters.inHTMLData(firstname) + '!</h1>')
 
 API Documentations
 -------
-**DISCLAIMER**: DO NOT apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>` and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. A workaround is to use `<input id="strJS" value="{{xssFilters.inHTMLData(data)}}">` and retrieve your data with `document.getElementById('strJS').value`.
+**DISCLAIMER**: DO NOT apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>` and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. A workaround is to use `<input id="strJS" value="{{{inHTMLData data}}}">` and retrieve your data with `document.getElementById('strJS').value`.
 
 There are five context-sensitive filters for generic input:
- - `<div>``{{xssFilters.inHTMLData(data)}}``</div>`
- - `<!--``{{xssFilters.inHTMLComment(comment)}}``-->`
- - `<input value='``{{xssFilters.inSingleQuotedAttr(value)}}``'/>`
- - `<input value="``{{xssFilters.inDoubleQuotedAttr(value)}}``"/>`
- - `<input value=``{{xssFilters.inUnQuotedAttr(value)}}``/>`
+ - `<div>``{{{inHTMLData data}}}``</div>`
+ - `<!--``{{{inHTMLComment comment}}}``-->`
+ - `<input value='``{{{inSingleQuotedAttr value}}}``'/>`
+ - `<input value="``{{{inDoubleQuotedAttr value}}}``"/>`
+ - `<input value=``{{{inUnQuotedAttr value}}}``/>`
 
-> Here, {{ }} are mustache markup to ease illustrations
+> Here we use {{{ }}} to indicate output expression to ease illustrations
 
 **Whenenver possible, apply a more specific filter** that best describe your context and data:
 
@@ -70,7 +70,7 @@ There are five context-sensitive filters for generic input:
 | URI Component | uriComponentInHTMLData() | uriComponentInHTMLComment() | uriComponentInSingleQuotedAttr() | uriComponentInDoubleQuotedAttr() | uriComponentInUnQuotedAttr() |
 | URI Fragment | uriFragmentInHTMLData() | uriFragmentInHTMLComment() | uriFragmentInSingleQuotedAttr() | uriFragmentInDoubleQuotedAttr() | uriFragmentInUnQuotedAttr() |
 
-Check out the [documentations] for more details.
+Check out the [documentations](../../wiki) for more details.
 
 
 
