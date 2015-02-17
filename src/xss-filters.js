@@ -14,39 +14,39 @@ var privFilters = require('./private-xss-filters');
 
 /* chaining filters */
 
-var yav = [privFilters.yavd, privFilters.yavs, privFilters.yavu];
-privFilters.yav = function (s, mode) {
-    return yav[mode](s);
-};
+var yavFilters = [privFilters.yavd, privFilters.yavs, privFilters.yavu];
+function yav (s, mode) {
+    return yavFilters[mode](s);
+}
 
 // uriInAttr
-privFilters.uriInAttr = function (s, mode) {
-    return privFilters.yubl(privFilters.yav(privFilters.yufull(s), mode));
-};
+function uriInAttr (s, mode) {
+    return privFilters.yubl(yav(privFilters.yufull(s), mode));
+}
 // uriPathInAttr
 // yubl is used 
 // Rationale: given pattern like this: <a href="{{{uriPathInDoubleQuotedAttr s}}}">
 //            developer may expect s is always prefixed with ? or /, but an attacker can abuse it with 'javascript:alert(1)'
-privFilters.uriPathInAttr = function (s, mode) {
-    return privFilters.yubl(privFilters.yav(privFilters.yu(s), mode));
-};
+function uriPathInAttr (s, mode) {
+    return privFilters.yubl(yav(privFilters.yu(s), mode));
+}
 // uriComponentInAttr
-privFilters.uriComponentInAttr = function (s, mode) {
-    return privFilters.yav(privFilters.yuc(s), mode);
-};
+function uriComponentInAttr (s, mode) {
+    return yav(privFilters.yuc(s), mode);
+}
 // uriFragmentInAttr
 // added yubl on top of uriComponentInAttr 
 // Rationale: given pattern like this: <a href="{{{uriFragmentInDoubleQuotedAttr s}}}">
 //            developer may expect s is always prefixed with #, but an attacker can abuse it with 'javascript:alert(1)'
-privFilters.uriFragmentInAttr = function (s, mode) {
-    return privFilters.yubl(privFilters.uriComponentInAttr(s, mode));
-};
+function uriFragmentInAttr (s, mode) {
+    return privFilters.yubl(uriComponentInAttr(s, mode));
+}
 // yucomment
 // Notice that "-" can bypass both encodeURI()/encodeURIComponent()
 // So, be aware that the comment state filter won't blindly html encode "-", otherwise will break legit URL like http://www.yahoo-inc.com/
-privFilters.yucomment = function (s, isComponent, isFullURI) {
+function yucomment (s, isComponent, isFullURI) {
     return privFilters.yc(isComponent ? privFilters.yuc(s) : isFullURI ? privFilters.yufull(s) : privFilters.yu(s));
-};
+}
 
 
 /** 
@@ -188,7 +188,7 @@ exports.inUnQuotedAttr = privFilters.yavu;
 * 
 */
 exports.uriInSingleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, 1);
+    return uriInAttr(s, 1);
 };
 
 /**
@@ -215,7 +215,7 @@ exports.uriInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriInDoubleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, 0);
+    return uriInAttr(s, 0);
 };
 
 
@@ -243,7 +243,7 @@ exports.uriInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriInUnQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, 2);
+    return uriInAttr(s, 2);
 };
 
 /**
@@ -296,7 +296,7 @@ exports.uriInHTMLData = privFilters.yufull;
 * 
 */
 exports.uriInHTMLComment = function (s) {
-    return privFilters.yucomment(s, false, true);
+    return yucomment(s, false, true);
 };
 
 
@@ -325,7 +325,7 @@ exports.uriInHTMLComment = function (s) {
 * 
 */
 exports.uriPathInSingleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, 1);
+    return uriPathInAttr(s, 1);
 };
 
 /**
@@ -351,7 +351,7 @@ exports.uriPathInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriPathInDoubleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, 0);
+    return uriPathInAttr(s, 0);
 };
 
 
@@ -378,7 +378,7 @@ exports.uriPathInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriPathInUnQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, 2);
+    return uriPathInAttr(s, 2);
 };
 
 /**
@@ -429,7 +429,7 @@ exports.uriPathInHTMLData = privFilters.yu;
 * <!-- http://example.com/?{{{uriQueryInHTMLComment uri_query}}} -->
 */
 exports.uriPathInHTMLComment = function (s) {
-    return privFilters.yucomment(s, false, false);
+    return yucomment(s, false, false);
 };
 
 
@@ -498,7 +498,7 @@ exports.uriQueryInHTMLComment = exports.uriPathInHTMLComment;
 * 
 */
 exports.uriComponentInSingleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, 1);
+    return uriComponentInAttr(s, 1);
 };
 
 /**
@@ -524,7 +524,7 @@ exports.uriComponentInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriComponentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, 0);
+    return uriComponentInAttr(s, 0);
 };
 
 
@@ -551,7 +551,7 @@ exports.uriComponentInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriComponentInUnQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, 2);
+    return uriComponentInAttr(s, 2);
 };
 
 /**
@@ -602,7 +602,7 @@ exports.uriComponentInHTMLData = privFilters.yuc;
 * <!-- http://example.com/#{{{uriComponentInHTMLComment uri_fragment}}} -->
 */
 exports.uriComponentInHTMLComment = function (s) {
-    return privFilters.yucomment(s, true);
+    return yucomment(s, true);
 };
 
 
@@ -630,7 +630,7 @@ exports.uriComponentInHTMLComment = function (s) {
 * 
 */
 exports.uriFragmentInSingleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, 1);
+    return uriFragmentInAttr(s, 1);
 };
 
 /**
@@ -656,7 +656,7 @@ exports.uriFragmentInSingleQuotedAttr = function (s) {
 * 
 */
 exports.uriFragmentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, 0);
+    return uriFragmentInAttr(s, 0);
 };
 
 
@@ -682,7 +682,7 @@ exports.uriFragmentInDoubleQuotedAttr = function (s) {
 * 
 */
 exports.uriFragmentInUnQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, 2);
+    return uriFragmentInAttr(s, 2);
 };
 
 
@@ -701,5 +701,11 @@ exports.uriFragmentInHTMLData = exports.uriComponentInHTMLData;
 * @alias module:xss-filters#uriComponentInHTMLComment
 */
 exports.uriFragmentInHTMLComment = exports.uriComponentInHTMLComment;
+
+
+
+// exposing privFilters
+// this is an undocumented feature, and please use it with extra care
+exports._privFilters = privFilters;
 
 })();

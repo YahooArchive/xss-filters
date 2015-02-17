@@ -15,6 +15,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     var filter = require('../../src/xss-filters');
     var testutils = require('../utils.js');
 
+    delete filter._privFilters;
+
     describe("xss-filters: existence tests", function() {
 
         it('filter inHTMLData exists', function() {

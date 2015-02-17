@@ -326,39 +326,39 @@ var privFilters = require('./private-xss-filters');
 
 /* chaining filters */
 
-var yav = [privFilters.yavd, privFilters.yavs, privFilters.yavu];
-privFilters.yav = function (s, mode) {
-    return yav[mode](s);
-};
+var yavFilters = [privFilters.yavd, privFilters.yavs, privFilters.yavu];
+function yav (s, mode) {
+    return yavFilters[mode](s);
+}
 
 // uriInAttr
-privFilters.uriInAttr = function (s, mode) {
-    return privFilters.yubl(privFilters.yav(privFilters.yufull(s), mode));
-};
+function uriInAttr (s, mode) {
+    return privFilters.yubl(yav(privFilters.yufull(s), mode));
+}
 // uriPathInAttr
 // yubl is used 
-// Rationale: given pattern like this: <a href="{{uriPathInDoubleQuotedAttr(s)}}">
+// Rationale: given pattern like this: <a href="{{{uriPathInDoubleQuotedAttr s}}}">
 //            developer may expect s is always prefixed with ? or /, but an attacker can abuse it with 'javascript:alert(1)'
-privFilters.uriPathInAttr = function (s, mode) {
-    return privFilters.yubl(privFilters.yav(privFilters.yu(s), mode));
-};
+function uriPathInAttr (s, mode) {
+    return privFilters.yubl(yav(privFilters.yu(s), mode));
+}
 // uriComponentInAttr
-privFilters.uriComponentInAttr = function (s, mode) {
-    return privFilters.yav(privFilters.yuc(s), mode);
-};
+function uriComponentInAttr (s, mode) {
+    return yav(privFilters.yuc(s), mode);
+}
 // uriFragmentInAttr
 // added yubl on top of uriComponentInAttr 
-// Rationale: given pattern like this: <a href="{{uriFragmentInDoubleQuotedAttr(s)}}">
+// Rationale: given pattern like this: <a href="{{{uriFragmentInDoubleQuotedAttr s}}}">
 //            developer may expect s is always prefixed with #, but an attacker can abuse it with 'javascript:alert(1)'
-privFilters.uriFragmentInAttr = function (s, mode) {
-    return privFilters.yubl(privFilters.uriComponentInAttr(s, mode));
-};
+function uriFragmentInAttr (s, mode) {
+    return privFilters.yubl(uriComponentInAttr(s, mode));
+}
 // yucomment
 // Notice that "-" can bypass both encodeURI()/encodeURIComponent()
 // So, be aware that the comment state filter won't blindly html encode "-", otherwise will break legit URL like http://www.yahoo-inc.com/
-privFilters.yucomment = function (s, isComponent, isFullURI) {
+function yucomment (s, isComponent, isFullURI) {
     return privFilters.yc(isComponent ? privFilters.yuc(s) : isFullURI ? privFilters.yufull(s) : privFilters.yu(s));
-};
+}
 
 
 /** 
@@ -380,7 +380,7 @@ privFilters.yucomment = function (s, isComponent, isFullURI) {
 *
 * @example
 * // output context to be applied by this filter.
-* <textarea>{{inHTMLData(html_data)}}</textarea>
+* <textarea>{{{inHTMLData html_data}}}</textarea>
 *
 */
 exports.inHTMLData = privFilters.yd;
@@ -390,11 +390,11 @@ exports.inHTMLData = privFilters.yd;
 * @function module:xss-filters#inHTMLComment
 *
 * @param {string} s - An untrusted user input
-* @returns {string} The string s with '-->', '--!>', ']>' respectively replaced with '-- >', '--! >', '] >'. In addition, a space is appened to those string s that ends with '-', '--', '--!', and ']'. 
+* @returns {string} The string s with '-->', '--!>', ']>' respectively replaced with '-- >', '--! >', '] >'. In addition, a space is appended to those string s that ends with '-', '--', '--!', and ']'. 
 *
 * @description
 * This filter is to be placed in HTML Comment context to disable any attempts in closing the html comment state
-* <p>Notice: --> and --!> are the syntaxes to close html comment state, while string that ends with -, --, or --! will also enable state closing if the variable is extenally suffixed with -> or >.
+* <p>Notice: --> and --!> are the syntaxes to close html comment state, while string that ends with -, --, or --! will also enable state closing if the variable is externally suffixed with -> or >.
 *            ']>' and string that ends with ']' are changed to '] >' and '] ' to disable Internet Explorer conditional comments, which are actually not part of the HTML 5 standard.</p>
 *
 * <ul>
@@ -404,7 +404,7 @@ exports.inHTMLData = privFilters.yd;
 *
 * @example
 * // output context to be applied by this filter.
-* <!-- {{inHTMLComment(html_comment)}} -->
+* <!-- {{{inHTMLComment html_comment}}} -->
 *
 */
 exports.inHTMLComment = privFilters.yc;
@@ -426,7 +426,7 @@ exports.inHTMLComment = privFilters.yc;
 *
 * @example
 * // output context to be applied by this filter.
-* <input name='firstname' value='{{inSingleQuotedAttr(firstname)}}' />
+* <input name='firstname' value='{{{inSingleQuotedAttr firstname}}}' />
 *
 */
 exports.inSingleQuotedAttr = privFilters.yavs;
@@ -448,7 +448,7 @@ exports.inSingleQuotedAttr = privFilters.yavs;
 *
 * @example
 * // output context to be applied by this filter.
-* <input name="firstname" value="{{inDoubleQuotedAttr(firstname)}}" />
+* <input name="firstname" value="{{{inDoubleQuotedAttr firstname}}}" />
 *
 */
 exports.inDoubleQuotedAttr = privFilters.yavd;
@@ -470,7 +470,7 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 *
 * @example
 * // output context to be applied by this filter.
-* <input name="firstname" value={{inUnQuotedAttr(firstname)}} />
+* <input name="firstname" value={{{inUnQuotedAttr firstname}}} />
 *
 */
 exports.inUnQuotedAttr = privFilters.yavu;
@@ -496,11 +496,11 @@ exports.inUnQuotedAttr = privFilters.yavu;
 *
 * @example
 * // output context to be applied by this filter.
-* <a href='{{uriInSingleQuotedAttr(full_uri)}}'>link</a>
+* <a href='{{{uriInSingleQuotedAttr full_uri}}}'>link</a>
 * 
 */
 exports.uriInSingleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, 1);
+    return uriInAttr(s, 1);
 };
 
 /**
@@ -523,11 +523,11 @@ exports.uriInSingleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="{{uriInDoubleQuotedAttr(full_uri)}}">link</a>
+* <a href="{{{uriInDoubleQuotedAttr full_uri}}}">link</a>
 * 
 */
 exports.uriInDoubleQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, 0);
+    return uriInAttr(s, 0);
 };
 
 
@@ -551,11 +551,11 @@ exports.uriInDoubleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href={{uriInUnQuotedAttr(full_uri)}}>link</a>
+* <a href={{{uriInUnQuotedAttr full_uri}}}>link</a>
 * 
 */
 exports.uriInUnQuotedAttr = function (s) {
-    return privFilters.uriInAttr(s, 2);
+    return uriInAttr(s, 2);
 };
 
 /**
@@ -578,7 +578,7 @@ exports.uriInUnQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="/somewhere">{{uriInHTMLData(full_uri)}}</a>
+* <a href="/somewhere">{{{uriInHTMLData full_uri}}}</a>
 * 
 */
 exports.uriInHTMLData = privFilters.yufull;
@@ -604,11 +604,11 @@ exports.uriInHTMLData = privFilters.yufull;
 *
 * @example
 * // output context to be applied by this filter.
-* <!-- {{uriInHTMLComment(full_uri)}} -->
+* <!-- {{{uriInHTMLComment full_uri}}} -->
 * 
 */
 exports.uriInHTMLComment = function (s) {
-    return privFilters.yucomment(s, false, true);
+    return yucomment(s, false, true);
 };
 
 
@@ -632,12 +632,12 @@ exports.uriInHTMLComment = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href='http://example.com/{{uriPathInSingleQuotedAttr(uri_path)}}'>link</a>
-* <a href='http://example.com/?{{uriQueryInSingleQuotedAttr(uri_query)}}'>link</a>
+* <a href='http://example.com/{{{uriPathInSingleQuotedAttr uri_path}}}'>link</a>
+* <a href='http://example.com/?{{{uriQueryInSingleQuotedAttr uri_query}}}'>link</a>
 * 
 */
 exports.uriPathInSingleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, 1);
+    return uriPathInAttr(s, 1);
 };
 
 /**
@@ -658,12 +658,12 @@ exports.uriPathInSingleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="http://example.com/{{uriPathInDoubleQuotedAttr(uri_path)}}">link</a>
-* <a href="http://example.com/?{{uriQueryInDoubleQuotedAttr(uri_query)}}">link</a>
+* <a href="http://example.com/{{{uriPathInDoubleQuotedAttr uri_path}}}">link</a>
+* <a href="http://example.com/?{{{uriQueryInDoubleQuotedAttr uri_query}}}">link</a>
 * 
 */
 exports.uriPathInDoubleQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, 0);
+    return uriPathInAttr(s, 0);
 };
 
 
@@ -685,12 +685,12 @@ exports.uriPathInDoubleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href=http://example.com/{{uriPathInUnQuotedAttr(uri_path)}}>link</a>
-* <a href=http://example.com/?{{uriQueryInUnQuotedAttr(uri_query)}}>link</a>
+* <a href=http://example.com/{{{uriPathInUnQuotedAttr uri_path}}}>link</a>
+* <a href=http://example.com/?{{{uriQueryInUnQuotedAttr uri_query}}}>link</a>
 * 
 */
 exports.uriPathInUnQuotedAttr = function (s) {
-    return privFilters.uriPathInAttr(s, 2);
+    return uriPathInAttr(s, 2);
 };
 
 /**
@@ -712,8 +712,8 @@ exports.uriPathInUnQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="http://example.com/">http://example.com/{{uriPathInHTMLData(uri_path)}}</a>
-* <a href="http://example.com/">http://example.com/?{{uriQueryInHTMLData(uri_query)}}</a>
+* <a href="http://example.com/">http://example.com/{{{uriPathInHTMLData uri_path}}}</a>
+* <a href="http://example.com/">http://example.com/?{{{uriQueryInHTMLData uri_query}}}</a>
 * 
 */
 exports.uriPathInHTMLData = privFilters.yu;
@@ -737,11 +737,11 @@ exports.uriPathInHTMLData = privFilters.yu;
 *
 * @example
 * // output context to be applied by this filter.
-* <!-- http://example.com/{{uriPathInHTMLComment(uri_path)}} -->
-* <!-- http://example.com/?{{uriQueryInHTMLComment(uri_query)}} -->
+* <!-- http://example.com/{{{uriPathInHTMLComment uri_path}}} -->
+* <!-- http://example.com/?{{{uriQueryInHTMLComment uri_query}}} -->
 */
 exports.uriPathInHTMLComment = function (s) {
-    return privFilters.yucomment(s, false, false);
+    return yucomment(s, false, false);
 };
 
 
@@ -806,11 +806,11 @@ exports.uriQueryInHTMLComment = exports.uriPathInHTMLComment;
 *
 * @example
 * // output context to be applied by this filter.
-* <a href='http://example.com/?q={{uriComponentInSingleQuotedAttr(uri_component)}}'>link</a>
+* <a href='http://example.com/?q={{{uriComponentInSingleQuotedAttr uri_component}}}'>link</a>
 * 
 */
 exports.uriComponentInSingleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, 1);
+    return uriComponentInAttr(s, 1);
 };
 
 /**
@@ -832,11 +832,11 @@ exports.uriComponentInSingleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="http://example.com/?q={{uriComponentInDoubleQuotedAttr(uri_component)}}">link</a>
+* <a href="http://example.com/?q={{{uriComponentInDoubleQuotedAttr uri_component}}}">link</a>
 * 
 */
 exports.uriComponentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, 0);
+    return uriComponentInAttr(s, 0);
 };
 
 
@@ -859,11 +859,11 @@ exports.uriComponentInDoubleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href=http://example.com/?q={{uriComponentInUnQuotedAttr(uri_component)}}>link</a>
+* <a href=http://example.com/?q={{{uriComponentInUnQuotedAttr uri_component}}}>link</a>
 * 
 */
 exports.uriComponentInUnQuotedAttr = function (s) {
-    return privFilters.uriComponentInAttr(s, 2);
+    return uriComponentInAttr(s, 2);
 };
 
 /**
@@ -885,8 +885,8 @@ exports.uriComponentInUnQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="http://example.com/">http://example.com/?q={{uriComponentInHTMLData(uri_component)}}</a>
-* <a href="http://example.com/">http://example.com/#{{uriComponentInHTMLData(uri_fragment)}}</a>
+* <a href="http://example.com/">http://example.com/?q={{{uriComponentInHTMLData uri_component}}}</a>
+* <a href="http://example.com/">http://example.com/#{{{uriComponentInHTMLData uri_fragment}}}</a>
 * 
 */
 exports.uriComponentInHTMLData = privFilters.yuc;
@@ -910,11 +910,11 @@ exports.uriComponentInHTMLData = privFilters.yuc;
 *
 * @example
 * // output context to be applied by this filter.
-* <!-- http://example.com/?q={{uriComponentInHTMLComment(uri_component)}} -->
-* <!-- http://example.com/#{{uriComponentInHTMLComment(uri_fragment)}} -->
+* <!-- http://example.com/?q={{{uriComponentInHTMLComment uri_component}}} -->
+* <!-- http://example.com/#{{{uriComponentInHTMLComment uri_fragment}}} -->
 */
 exports.uriComponentInHTMLComment = function (s) {
-    return privFilters.yucomment(s, true);
+    return yucomment(s, true);
 };
 
 
@@ -938,11 +938,11 @@ exports.uriComponentInHTMLComment = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href='http://example.com/#{{uriFragmentInSingleQuotedAttr(uri_fragment)}}'>link</a>
+* <a href='http://example.com/#{{{uriFragmentInSingleQuotedAttr uri_fragment}}}'>link</a>
 * 
 */
 exports.uriFragmentInSingleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, 1);
+    return uriFragmentInAttr(s, 1);
 };
 
 /**
@@ -964,11 +964,11 @@ exports.uriFragmentInSingleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href="http://example.com/#{{uriFragmentInDoubleQuotedAttr(uri_fragment)}}">link</a>
+* <a href="http://example.com/#{{{uriFragmentInDoubleQuotedAttr uri_fragment}}}">link</a>
 * 
 */
 exports.uriFragmentInDoubleQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, 0);
+    return uriFragmentInAttr(s, 0);
 };
 
 
@@ -990,11 +990,11 @@ exports.uriFragmentInDoubleQuotedAttr = function (s) {
 *
 * @example
 * // output context to be applied by this filter.
-* <a href=http://example.com/#{{uriFragmentInUnQuotedAttr(uri_fragment)}}>link</a>
+* <a href=http://example.com/#{{{uriFragmentInUnQuotedAttr uri_fragment}}}>link</a>
 * 
 */
 exports.uriFragmentInUnQuotedAttr = function (s) {
-    return privFilters.uriFragmentInAttr(s, 2);
+    return uriFragmentInAttr(s, 2);
 };
 
 
@@ -1013,6 +1013,12 @@ exports.uriFragmentInHTMLData = exports.uriComponentInHTMLData;
 * @alias module:xss-filters#uriComponentInHTMLComment
 */
 exports.uriFragmentInHTMLComment = exports.uriComponentInHTMLComment;
+
+
+
+// exposing privFilters
+// this is an undocumented feature, and please use it with extra care
+exports._privFilters = privFilters;
 
 })();
 
