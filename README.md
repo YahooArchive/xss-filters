@@ -13,7 +13,7 @@ Figure 1. Encoding decision based on the HTML5 specification to achieve the idea
 ## Designs
 
 - **Standard Compliant** - Stemmed from the modern HTML 5 Specification, we re-design how XSS filters should be applied. The general principle is to encode characters that are specific to each non-scriptable output context. Therefore, untrusted input characters are sanitized by context-sensitive encoding that will not break out from the containing context. The approach stops any malicious inputs from executed as scripts, as well as solving the age-old problem of over/double-encoding.
-- **Carefully Designed** - Every filter is heavily scrutized by Yahoo Security Engineers. The specific sets of characters that require encoding are minimized so as to preserve usability to the greatest extent.
+- **Carefully Designed** - Every filter is heavily scrutinized by Yahoo Security Engineers. The specific sets of characters that require encoding are minimized so as to preserve usability to the greatest extent.
 
 ## Quick Start
 
@@ -60,7 +60,7 @@ There are five context-sensitive filters for generic input:
 
 > Here we use {{{ }}} to indicate output expression to ease illustrations
 
-**Whenenver possible, apply a more specific filter** that best describe your context and data:
+**Whenever possible, apply a more specific filter** that best describes your context and data:
 
 | Input\Context | HTMLData | HTMLComment | SingleQuotedAttr | DoubleQuotedAttr | UnQuotedAttr |
 | -------- | -------- | -------- | -------- | -------- | -------- |
