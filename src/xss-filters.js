@@ -104,7 +104,7 @@ exports.inHTMLComment = privFilters.yc;
 * @returns {string} The string s with any single-quote characters encoded into '&amp;&#39;'.
 *
 * @description
-* <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attribtues!</p>
+* <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
 * <p class="warning">Warning: If you're working on URI/components, use the more specific uri___InSingleQuotedAttr filter </p>
 * This filter is to be placed in HTML Attribute Value (single-quoted) state to encode all single-quote characters into '&amp;&#39;'
 *
@@ -126,7 +126,7 @@ exports.inSingleQuotedAttr = privFilters.yavs;
 * @returns {string} The string s with any single-quote characters encoded into '&amp;&quot;'.
 *
 * @description
-* <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attribtues!</p>
+* <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
 * <p class="warning">Warning: If you're working on URI/components, use the more specific uri___InDoubleQuotedAttr filter </p>
 * This filter is to be placed in HTML Attribute Value (double-quoted) state to encode all single-quote characters into '&amp;&quot;'
 *
@@ -148,7 +148,7 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @returns {string} The string s with any tab, LF, FF, space, and '>' encoded.
 *
 * @description
-* <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attribtues!</p>
+* <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
 * <p class="warning">Warning: If you're working on URI/components, use the more specific uri___InUnQuotedAttr filter </p>
 * This filter is to be placed in HTML Attribute Value (unquoted) state to encode tab, LF, FF, space, and '>' into their equivalent HTML entity representations.
 *
@@ -255,7 +255,7 @@ exports.uriInUnQuotedAttr = function (s) {
 * @description
 * This filter is to be placed in HTML Data state for an <strong>absolute</strong> URI.
 *
-* <p>Notice: The actual implmentation skips inHTMLData(), since '<' is already encoded as '%3C' by encodeURI().</p>
+* <p>Notice: The actual implementation skips inHTMLData(), since '<' is already encoded as '%3C' by encodeURI().</p>
 * <p>Notice: This filter is IPv6 friendly by not encoding '[' and ']'.</p>
 *
 * <ul>
@@ -390,7 +390,7 @@ exports.uriPathInUnQuotedAttr = function (s) {
 * @description
 * This filter is to be placed in HTML Data state for a URI Path/Query or relative URI.
 *
-* <p>Notice: The actual implmentation skips inHTMLData(), since '<' is already encoded as '%3C' by encodeURI().</p>
+* <p>Notice: The actual implementation skips inHTMLData(), since '<' is already encoded as '%3C' by encodeURI().</p>
 *
 * <ul>
 * <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURI">encodeURI | MDN</a></li>
@@ -563,7 +563,7 @@ exports.uriComponentInUnQuotedAttr = function (s) {
 * @description
 * This filter is to be placed in HTML Data state for a URI Component.
 *
-* <p>Notice: The actual implmentation skips inHTMLData(), since '<' is already encoded as '%3C' by encodeURIComponent().</p>
+* <p>Notice: The actual implementation skips inHTMLData(), since '<' is already encoded as '%3C' by encodeURIComponent().</p>
 *
 * <ul>
 * <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent">encodeURIComponent | MDN</a></li>
