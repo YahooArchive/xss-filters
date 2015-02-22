@@ -24,7 +24,7 @@ Install the [xss-filters npm](https://www.npmjs.com/package/xss-filters), and in
 $ npm install xss-filters --save
 ```
 
-Require the secure filters, and you can then use it with/out your favorite tempating engine.
+Require the secure filters, and you can then use it with/out your favorite templating engine.
 ```javascript
 var express = require('express');
 var app = express();
