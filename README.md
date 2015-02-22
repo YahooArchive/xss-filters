@@ -49,7 +49,7 @@ document.write('<h1> Hello, ' + xssFilters.inHTMLData(firstname) + '!</h1>')
 
 API Documentations
 -------
-**DISCLAIMER**: DO NOT apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>` and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. A workaround is to use `<input id="strJS" value="{{{inHTMLData data}}}">` and retrieve your data with `document.getElementById('strJS').value`.
+**DISCLAIMER**: (1) Filters are applied in UTF-8 documents. (2) DO NOT apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>`, `<embed>`, and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. A workaround is to use `<input id="strJS" value="{{{inHTMLData data}}}">` and retrieve your data with `document.getElementById('strJS').value`.
 
 There are five context-sensitive filters for generic input:
  - `<div>``{{{inHTMLData data}}}``</div>`
