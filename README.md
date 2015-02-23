@@ -13,13 +13,13 @@ developer-friendly. It is safe to apply these filters like so:
 el.innerHTML = (
    "<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" +
    xssFilters.uriInHTMLData(url) + 
-   "</a>"
+   "</a>";
 ```
 
-In this example, the traditional wisdom of blindly escapes
+In this example, the traditional wisdom of blindly escaping
 the five well-known characters (```&<>'"```) wouldn't stop
-XSS. (E.g, when url is ```javascript:alert(1)``` or 
-``` onclick=alert(1)```).`
+XSS. (E.g, when url is equal to ```javascript:alert(1)``` or 
+```onclick=alert(1)``` ).
 
 - ***Just Sufficient* escaping.** Escapes the *minimal* set of
 characters to thwart JavaScript executions, thus preventing
@@ -55,8 +55,8 @@ Install the [xss-filters npm](https://www.npmjs.com/package/xss-filters), and in
 npm install xss-filters --save
 ```
 
-Require the secure filters, and you can then use it with your favorite
-template engine.
+Require *xss-filters*, and you can then use it with your favorite
+template engine. Or just use it directly:
 
 ```javascript
 var express = require('express');
@@ -89,12 +89,18 @@ API Documentations
 
 **WARNINGS**
 
-(1) Filters MUST be applied only to UTF-8-encoded documents.
+(1) Filters **MUST ONLY** be applied to UTF-8-encoded documents.
 
-(2) DO NOT apply any filters inside any scriptable contexts,
+(2) **DON'T** apply any filters inside any scriptable contexts,
 i.e., `<script>`, `<style>`, `<embed>`, and `<svg>` tags as
 well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes.
-A workaround is to use `<input id="strJS" value="{{{inHTMLData data}}}">`
+It is **never** safe to permit untrusted input inside a scriptable
+context.
+
+A workaround, if you need to include data for JS to use, is to use
+```html
+<input id="strJS" value="{{{inHTMLData data}}}">
+```
 and retrieve your data with `document.getElementById('strJS').value`.
 
 There are five context-sensitive filters for generic input:
@@ -106,7 +112,7 @@ There are five context-sensitive filters for generic input:
 
 > Here we use {{{ }}} to indicate output expression to ease illustrations
 
-**Whenever possible, apply a more specific filter** that best describes your context and data:
+**Whenever possible, apply the most specific filter** that describes your context and data:
 
 | Input\Context | HTMLData | HTMLComment | SingleQuotedAttr | DoubleQuotedAttr | UnQuotedAttr |
 | -------- | -------- | -------- | -------- | -------- | -------- |
@@ -124,8 +130,8 @@ Contributing
 To contribute, make changes in `src/` and `tests/`, and then do:
 
 ```sh
-npm test             # run the tests
-npm run-script docs  # build the docs
+npm test              # run the tests
+npm run-script docs   # build the docs
 npm run-script build  # build the minified version
 ```
 
@@ -139,3 +145,5 @@ License
 This software is free to use under the Yahoo BSD license.
 See the [LICENSE file](./LICENSE) for license text and
 copyright information.
+
+[html5]: https://whatwg.org/html5
