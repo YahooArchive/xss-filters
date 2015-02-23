@@ -55,11 +55,13 @@ exports.y = function(s) {
     }
 
     return s.replace(SPECIAL_HTML_CHARS, function (m) {
-        if (m === '&')      { return '&amp;';  }
-        if (m === '<')      { return '&lt;';   }
-        if (m === '>')      { return '&gt;';   }
-        if (m === '"')      { return '&quot;'; }
-        /* if (m === "'") */  return '&#39;';
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[m];
     });
 };
 
@@ -88,13 +90,15 @@ exports.yc = function (s) {
         s = String(s);
     }
     return s.replace(COMMENT_SENSITIVE_CHARS, function(m){
-        if (m === '-->')  { return '-- >';  }
-        if (m === '--!>') { return '--! >'; }
-        if (m === '--!')  { return '--! ';  }
-        if (m === '--')   { return '-- ';   }
-        if (m === '-')    { return '- ';    }
-        if (m === ']>')   { return '] >';   }
-        /*if (m === ']')*/   return '] ';
+        return {
+            '-->' : '-- >',
+            '--!>': '--! >',
+            '--!' : '--! ',
+            '--'  : '-- ',
+            '-'   : '- ',
+            ']>'  : '] >',
+            ']'   : '] '
+        }[m];
     });
 };
 
@@ -131,11 +135,13 @@ exports.yavu = function (s) {
     }
 
     s = s.replace(ATTR_VALUE_UNQUOTED_CHARS, function (m) {
-        if (m === '\t')    { return '&Tab;';     }
-        if (m === '\n')    { return '&NewLine;'; }
-        if (m === '\f')    { return '&#12;';     } // in hex: 0C
-        if (m === ' ')     { return '&#32;';     } // in hex: 20
-        /*if (m === '>')*/   return '&gt;';
+        return {
+            '\t': '&Tab;',
+            '\n': '&NewLine;',
+            '\f': '&#12;', // in hex: 0C
+            ' ' : '&#32;', // in hex: 20
+            '>' : '&gt;'
+        }[m];
     });
 
     // if s starts with ' or ", encode it resp. as &#39; or &quot; to enforce the attr value (unquoted) state
@@ -144,8 +150,10 @@ exports.yavu = function (s) {
     //    therefore, no need to encode the quote
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
     s = s.replace(BEFORE_ATTR_VALUE_CHARS, function (m) {
-        if (m === '"')     { return '&quot;'; }
-        /*if (m === "'")*/   return '&#39;';
+        return {
+            '"': '&quot;',
+            "'": '&#39;'
+        }[m];
     });
 
     // Inject NULL character if an empty string is encountered in 
