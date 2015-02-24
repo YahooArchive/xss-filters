@@ -1,30 +1,39 @@
 Secure XSS Filters
 =================
-Just sufficient output filtering to prevent XSS!
+*Just sufficient* output filtering to prevent XSS!
 
 ## Goals
 
-- **More Secure** - Context-dependent output filters that are developer-friendly and easy to comprehend. It is secure to apply our filters like so: ```el.innerHTML = "<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" + xssFilters.uriInHTMLData(url) + "</a>"```. In this example, the traditional wisdom of blindly encoding the five well-known characters (```&``` ```<``` ```>``` ```'``` ```"```) would however fail in stopping XSS (i.e., when url is ```javascript:alert(1)``` or ``` onclick=alert(1)```).
-- **Just Sufficient Encoding** - Encode the *minimal* set of characters to thwart JavaScript executions, thus preventing XSS attacks while keeping most characters intact. Say goodbye to double-encoding problems such as '&amp;amp;lt;', as resulted often by traditional filters!!
+- **More Secure.** Context-dependent output filters that are developer-friendly. It is safe to apply these filters like so: 
 
-![alt Visualizing the concept of just sufficient encoding](https://ierg4210.github.io/web/images/xss-filters/xss-filters.png)
-Figure 1. Encoding decision based on the HTML5 specification to achieve the idea of "just sufficient encoding"
+  ```javascript
+el.innerHTML = "<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" 
+                 + xssFilters.uriInHTMLData(url) + "</a>";
+```
 
-## Designs
+  In this example, the traditional wisdom of blindly escaping the five well-known characters (`&` `<` `>` `'` `"`) would not stop XSS (e.g., when `url` is equal to `javascript:alert(1)` or ` onclick=alert(1)`).
 
-- **Standard Compliant** - Stemmed from the modern HTML 5 Specification, we re-design how XSS filters should be applied. The general principle is to encode characters that are specific to each non-scriptable output context. Therefore, untrusted input characters are sanitized by context-sensitive encoding that will not break out from the containing context. The approach stops any malicious inputs from executed as scripts, as well as solving the age-old problem of over/double-encoding.
-- **Carefully Designed** - Every filter is heavily scrutinized by Yahoo Security Engineers. The specific sets of characters that require encoding are minimized so as to preserve usability to the greatest extent.
+- **Just Sufficient Encoding.** Encode the *minimal* set of characters to thwart JavaScript executions, thus preventing XSS attacks while keeping most characters intact. Say goodbye to double-encoding problems such as '&amp;amp;lt;', as often resulted by traditional filters!!
+
+  ![alt Visualizing the concept of just sufficient encoding](https://ierg4210.github.io/web/images/xss-filters/xss-filters.png)
+  Figure 1. "Just sufficient" encoding based on the HTML5 spec.
+
+## Design
+
+- **Standards Compliant.** We redesign XSS filters based on the modern [HTML 5 Specification](https://html.spec.whatwg.org/multipage/syntax.html#syntax). The principle is to escape characters specific to each non-scriptable output context. Hence, untrusted inputs, once sanitized by context-sensitive escaping, cannot break out from the containing context. This approach stops malicious inputs from being executed as scripts,and also prevents the age-old problem of over/double-encoding.
+- **Carefully Designed.** Every filter is heavily scrutinized by Yahoo Security Engineers. The specific sets of characters that require encoding are minimized to preserve usability to the greatest extent possible.
 
 ## Quick Start
 
 ### Server-side (nodejs)
 
-Install the [xss-filters npm](https://www.npmjs.com/package/xss-filters), and include it as your project's dependency.
-```
-$ npm install xss-filters --save
+Install the [xss-filters npm](https://www.npmjs.com/package/xss-filters), and include it as a dependency for your project.
+```sh
+npm install xss-filters --save
 ```
 
-Require the secure filters, and you can then use it with/out your favorite templating engine.
+Require *xss-filters*, and you may use it with your favorite template engine. Or just use it directly:
+
 ```javascript
 var express = require('express');
 var app = express();
@@ -38,7 +47,8 @@ app.get('/', function(req, res){
 
 ### Client-side (browser)
 
-Simply download the latest minified version of JavaScript file directly from the [`dist/`](./dist) folder. Embed it to your HTML file, and all filters are exposed to a global object called `xssFilters`.
+Simply download the latest minified version from the [`dist/`](./dist) folder. Embed it in your HTML file, and all filters are available in a global object called `xssFilters`.
+
 ```html
 <script src="dist/xss-filters.min.js"></script>
 <script>
@@ -49,7 +59,20 @@ document.write('<h1> Hello, ' + xssFilters.inHTMLData(firstname) + '!</h1>')
 
 API Documentations
 -------
-**DISCLAIMER**: (1) Filters are applied in UTF-8 documents. (2) DO NOT apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>`, `<embed>`, and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. A workaround is to use `<input id="strJS" value="{{{inHTMLData data}}}">` and retrieve your data with `document.getElementById('strJS').value`.
+
+### WARNINGS
+
+(1) Filters **MUST ONLY** be applied to UTF-8-encoded documents.
+
+(2) **DON'T** apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>`, `<embed>`, and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. It is **unsafe** to permit untrusted input inside a scriptable context. 
+
+A workaround, if you need to include data for JS, is to use:
+```html
+<input id="strJS" value="{{{inDoubleQuotedAttr data}}}">
+```
+and retrieve your data with `document.getElementById('strJS').value`.
+
+### The API
 
 There are five context-sensitive filters for generic input:
  - `<div>``{{{inHTMLData data}}}``</div>`
@@ -60,7 +83,7 @@ There are five context-sensitive filters for generic input:
 
 > Here we use {{{ }}} to indicate output expression to ease illustrations
 
-**Whenever possible, apply a more specific filter** that best describes your context and data:
+**Whenever possible, apply the most specific filter** that describes your context and data:
 
 | Input\Context | HTMLData | HTMLComment | SingleQuotedAttr | DoubleQuotedAttr | UnQuotedAttr |
 | -------- | -------- | -------- | -------- | -------- | -------- |
@@ -74,12 +97,14 @@ Check out the [documentations](../../wiki) for more details.
 
 
 
-Contribute
+Contributing
 -------
-To contribute, you will make changes in `src/` and `tests/`, followed by the following commands:
-- ```$ npm test``` to run the tests
-- ```$ npm run-script docs``` to build the docs
-- ```$ npm run-script build``` to build the standalone JavaScript for client-side use
+To contribute, make changes in [`src/`](./src) and [`tests/`](./tests), and then do:
+```sh
+npm test              # run the tests
+npm run-script build  # build the minified version for client-side use
+npm run-script docs   # build the docs
+```
 
 Build
 -----

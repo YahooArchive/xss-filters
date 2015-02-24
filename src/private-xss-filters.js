@@ -30,7 +30,9 @@ exports.FILTER_URI_SCHEME_BLACKLIST = "yubl";
 exports.FILTER_FULL_URI = "yufull";
 
 
-var LT     = /</g,
+var STR_UD = 'undefined',
+    STR_NL = 'null',
+    LT     = /</g,
     QUOT   = /\"/g,
     SQUOT  = /\'/g,
     SPECIAL_HTML_CHARS = /[&<>"']/g;
@@ -49,31 +51,26 @@ var LT     = /</g,
  *
  */
 exports.y = function(s) {
-    // s if undefined has no toString() method. String(s) will return 'undefined'
-    if (typeof s !== 'string') {
-        s = String(s);
-    }
-
-    return s.replace(SPECIAL_HTML_CHARS, function (m) {
-        return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        }[m];
-    });
+    return typeof s === STR_UD ? STR_UD
+         : s === null          ? STR_NL
+         : s.toString()
+            .replace(SPECIAL_HTML_CHARS, function (m) {
+                if (m === '&')      { return '&amp;';  }
+                if (m === '<')      { return '&lt;';   }
+                if (m === '>')      { return '&gt;';   }
+                if (m === '"')      { return '&quot;'; }
+                /* if (m === "'") */  return '&#39;';
+            });
 };
 
 
 // FOR DETAILS, refer to inHTMLData()
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#data-state
 exports.yd = function (s) {
-    // s if undefined has no toString() method. String(s) will return 'undefined'
-    if (typeof s !== 'string') {
-        s = String(s);
-    }
-    return s.replace(LT, '&lt;');
+    return typeof s === STR_UD ? STR_UD
+         : s === null          ? STR_NL
+         : s.toString()
+            .replace(LT, '&lt;');
 };
 
 
@@ -85,21 +82,18 @@ var COMMENT_SENSITIVE_CHARS = /(--!?>|--?!?$|\]>|\]$)/g;
 // ']>' and 'ends with ]' patterns deal with IE conditional comments. verified in IE that '] >' can stop that.
 // Reference: http://msdn.microsoft.com/en-us/library/ms537512%28v=vs.85%29.aspx
 exports.yc = function (s) {
-    // s if undefined has no toString() method. String(s) will return 'undefined'
-    if (typeof s !== 'string') {
-        s = String(s);
-    }
-    return s.replace(COMMENT_SENSITIVE_CHARS, function(m){
-        return {
-            '-->' : '-- >',
-            '--!>': '--! >',
-            '--!' : '--! ',
-            '--'  : '-- ',
-            '-'   : '- ',
-            ']>'  : '] >',
-            ']'   : '] '
-        }[m];
-    });
+    return typeof s === STR_UD ? STR_UD
+         : s === null          ? STR_NL
+         : s.toString()
+            .replace(COMMENT_SENSITIVE_CHARS, function(m){
+                if (m === '-->')  { return '-- >';  }
+                if (m === '--!>') { return '--! >'; }
+                if (m === '--!')  { return '--! ';  }
+                if (m === '--')   { return '-- ';   }
+                if (m === '-')    { return '- ';    }
+                if (m === ']>')   { return '] >';   }
+                /*if (m === ']')*/   return '] ';
+            });
 };
 
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
@@ -109,39 +103,34 @@ var ATTR_VALUE_UNQUOTED_CHARS = /[\t\n\f >]/g;
 // FOR DETAILS, refer to inDoubleQuotedAttr()
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(double-quoted)-state
 exports.yavd = function (s) {
-    if (typeof s !== 'string') {
-        s = String(s);
-    }
-
-    return s.replace(QUOT, '&quot;');
+    return typeof s === STR_UD  ? STR_UD
+         : s === null           ? STR_NL
+         : s.toString()
+            .replace(QUOT, '&quot;');
 };
 
 // FOR DETAILS, refer to inSingleQuotedAttr()
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(single-quoted)-state
 exports.yavs = function (s) {
-    if (typeof s !== 'string') {
-        s = String(s);
-    }
-
-    return s.replace(SQUOT, '&#39;');
+    return typeof s === STR_UD  ? STR_UD
+         : s === null           ? STR_NL
+         : s.toString()
+            .replace(SQUOT, '&#39;');
 };
 
 // FOR DETAILS, refer to inUnQuotedAttr()
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
 // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
 exports.yavu = function (s) {
-    if (typeof s !== 'string') {
-        s = String(s);
-    }
+    if (typeof s === STR_UD)  return STR_UD;
+    if (s === null)           return STR_NL;
 
-    s = s.replace(ATTR_VALUE_UNQUOTED_CHARS, function (m) {
-        return {
-            '\t': '&Tab;',
-            '\n': '&NewLine;',
-            '\f': '&#12;', // in hex: 0C
-            ' ' : '&#32;', // in hex: 20
-            '>' : '&gt;'
-        }[m];
+    s = s.toString().replace(ATTR_VALUE_UNQUOTED_CHARS, function (m) {
+        if (m === '\t')    { return '&Tab;';     }
+        if (m === '\n')    { return '&NewLine;'; }
+        if (m === '\f')    { return '&#12;';     } // in hex: 0C
+        if (m === ' ')     { return '&#32;';     } // in hex: 20
+        /*if (m === '>')*/   return '&gt;';
     });
 
     // if s starts with ' or ", encode it resp. as &#39; or &quot; to enforce the attr value (unquoted) state
@@ -150,10 +139,8 @@ exports.yavu = function (s) {
     //    therefore, no need to encode the quote
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
     s = s.replace(BEFORE_ATTR_VALUE_CHARS, function (m) {
-        return {
-            '"': '&quot;',
-            "'": '&#39;'
-        }[m];
+        if (m === '"')     { return '&quot;'; }
+        /*if (m === "'")*/   return '&#39;';
     });
 
     // Inject NULL character if an empty string is encountered in 
@@ -171,18 +158,11 @@ exports.yavu = function (s) {
     //   the comment state, which therefore will not mess up later 
     //   contexts.
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-    if (s === '') {
-        return '\u0000';
-    }
-
-    return s;
+    return (s === '') ? '\u0000' : s;
 };
 
 exports.yu = encodeURI;
 exports.yuc = encodeURIComponent;
-
-
-var URI_FASTLANE = ['&', 'j', 'J', 'v', 'V'];
 
 // Reference: https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Null_breaks_up_JavaScript_directive
 // Reference: https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Embedded_newline_to_break_up_XSS
@@ -270,9 +250,10 @@ var URI_BLACKLIST, URI_BLACKLIST_REGEXPSTR = [
 ].join('');
 */
 
-// delay building URI_BLACKLIST as an RegExp() object until the first hit
-var URI_BLACKLIST = null, 
-// the following str is generated by the above commented logic
+var URI_SLOWLANE = ['&', 'j', 'J', 'v', 'V'],
+    URI_BLACKLIST = null, 
+    // delay building URI_BLACKLIST as an RegExp() object until the first hit
+    // the following str is generated by the above commented logic
     URI_BLACKLIST_REGEXPSTR = "^(?:&#[xX]0*(?:1?[1-9a-fA-F]|10|20);?|&#0*(?:[1-9]|[1-2][0-9]|30|31|32);?|&Tab;|&NewLine;)*(?:(?:j|J|&#[xX]0*(?:6|4)[aA];?|&#0*(?:106|74);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:a|A|&#[xX]0*(?:6|4)1;?|&#0*(?:97|65);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:v|V|&#[xX]0*(?:7|5)6;?|&#0*(?:118|86);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:a|A|&#[xX]0*(?:6|4)1;?|&#0*(?:97|65);?)|(?:v|V|&#[xX]0*(?:7|5)6;?|&#0*(?:118|86);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:b|B|&#[xX]0*(?:6|4)2;?|&#0*(?:98|66);?))(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:s|S|&#[xX]0*(?:7|5)3;?|&#0*(?:115|83);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:c|C|&#[xX]0*(?:6|4)3;?|&#0*(?:99|67);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:r|R|&#[xX]0*(?:7|5)2;?|&#0*(?:114|82);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:i|I|&#[xX]0*(?:6|4)9;?|&#0*(?:105|73);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:p|P|&#[xX]0*(?:7|5)0;?|&#0*(?:112|80);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?:t|T|&#[xX]0*(?:7|5)4;?|&#0*(?:116|84);?)(?:&#[xX]0*[9aAdD];?|&#0*(?:9|10|13);?|&Tab;|&NewLine;)*(?::|&#[xX]0*3[aA];?|&#0*58;?)";
 
 /* 
@@ -292,9 +273,10 @@ var URI_BLACKLIST = null,
 // This is used to disable JS execution capabilities by prefixing x- to ^javascript: or ^vbscript: that possibly could trigger script execution in URI attribute context
 exports.yubl = function (s) {
     
-    // FASTLANE for well-known protocols or relative URLs
-    // let go if the first char is not &, j, J, v nor V
-    if (URI_FASTLANE.indexOf(s[0]) === -1) {
+    // assumption: s has gone through yavd/yavs/yavu(encodeURI/encodeURIComponent(s))
+    // chars like whitespaces are already turned to %-encoding
+    // so, let go if the first char is not &, j, J, v nor V
+    if (URI_SLOWLANE.indexOf(s[0]) === -1) {
         return s;
     }
     
@@ -306,11 +288,14 @@ exports.yubl = function (s) {
     return URI_BLACKLIST.test(s) ? 'x-' + s : s;
 };
 
+// This is NOT a security-critical filter.
 // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
 // Reference: https://tools.ietf.org/html/rfc3986
 var URL_IPV6 = /\/\/%5B([A-Fa-f0-9:]+)%5D/i;
 exports.yufull = function (s) {
-    return exports.yu(s).replace(URL_IPV6, function(m, p){ return ['//[', p, ']'].join(''); });
+    // return exports.yu(s)
+    return encodeURI(s)
+            .replace(URL_IPV6, function(m, p){ return ['//[', p, ']'].join(''); });
 };
 
 
