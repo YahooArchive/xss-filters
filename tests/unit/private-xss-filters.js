@@ -132,7 +132,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         });
     });
 
-    describe("private-xss-filters: error tests", function() {
+    describe("private-xss-filters: error and data type tests", function() {
 
         // an feature indicator of which encodeURI() and encodeURIComponent is used
         it('filter yuc and yu throw URI malformed', function() {
@@ -153,6 +153,73 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yuc()).to.eql('undefined');
             // yubl will not be independently used
             // expect(filter.yubl()).to.eql('undefined');
+        });
+
+        it('filters handling of null input', function() {
+            expect(filter.y(null)).to.eql('null');
+            expect(filter.yd(null)).to.eql('null');
+            expect(filter.yc(null)).to.eql('null');
+
+            expect(filter.yavd(null)).to.eql('null');
+            expect(filter.yavs(null)).to.eql('null');
+            expect(filter.yavu(null)).to.eql('null');
+
+            expect(filter.yu(null)).to.eql('null');
+            expect(filter.yuc(null)).to.eql('null');
+            // yubl will not be independently used
+            // expect(filter.yubl()).to.eql('undefined');
+        });
+
+
+        it('filters handling of array input', function() {
+            var array = ['a', 'b'], result = 'a,b';
+
+            expect(filter.y(array)).to.eql(result);
+            expect(filter.yd(array)).to.eql(result);
+            expect(filter.yc(array)).to.eql(result);
+
+            expect(filter.yavd(array)).to.eql(result);
+            expect(filter.yavs(array)).to.eql(result);
+            expect(filter.yavu(array)).to.eql(result);
+
+            expect(filter.yu(array)).to.eql(result);
+            expect(filter.yuc(array)).to.eql('a%2Cb');
+            // yubl will not be independently used
+            // expect(filter.yubl()).to.eql('undefined');
+        });
+
+
+        it('filters handling of object input', function() {
+            var object = {'a':1, 'b':0}, result = '[object Object]';
+
+            expect(filter.y(object)).to.eql(result);
+            expect(filter.yd(object)).to.eql(result);
+            expect(filter.yc(object)).to.eql(result + ' ');
+
+            expect(filter.yavd(object)).to.eql(result);
+            expect(filter.yavs(object)).to.eql(result);
+            expect(filter.yavu(object)).to.eql('[object&#32;Object]');
+
+            expect(filter.yu(object)).to.eql('%5Bobject%20Object%5D');
+            expect(filter.yuc(object)).to.eql('%5Bobject%20Object%5D');
+            // yubl will not be independently used
+            // expect(filter.yubl()).to.eql('undefined');
+        });
+
+        it('filters handling of empty string', function() {
+            var str = '', result = '';
+
+            expect(filter.y(str)).to.eql(result);
+            expect(filter.yd(str)).to.eql(result);
+            expect(filter.yc(str)).to.eql(result);
+
+            expect(filter.yavd(str)).to.eql(result);
+            expect(filter.yavs(str)).to.eql(result);
+            expect(filter.yavu(str)).to.eql('\u0000');
+
+            expect(filter.yu(str)).to.eql(result);
+            expect(filter.yuc(str)).to.eql(result);
+            expect(filter.yubl(str)).to.eql(result);
         });
     });
 
