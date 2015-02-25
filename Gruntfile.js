@@ -12,7 +12,9 @@ module.exports = function(grunt) {
       options: {
         scripturl: true,
         camelcase: true,
-        unused: true
+        unused: true,
+        curly: true,
+        node: true
       }
     },
     jsdoc : {
@@ -41,18 +43,28 @@ module.exports = function(grunt) {
         banner: '/**\n'
               + ' * <%= pkg.name %> - v<%= pkg.version %>\n'
               + ' * Yahoo! Inc. Copyrights licensed under the New BSD License. See the accompanying LICENSE file for terms.\n'
-              + ' */\n'
+              + ' */\n',
+        compress: {
+          join_vars: true
+        }
       },
-      build: {
+      buildBrowserified: {
         src: 'dist/<%= pkg.name %>.js',
+        dest: 'dist/<%= pkg.name %>.js'
+      },
+      buildMin: {
+        options: {
+          wrap: 'xssFilters'
+        },
+        src: 'src/<%= pkg.name %>.js',
         dest: 'dist/<%= pkg.name %>.min.js'
-      }
-    },
-    copy: {
-      buildFile: {
-        files: [
-          { dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.min.js', src: 'dist/<%= pkg.name %>.min.js'}
-        ]
+      },
+      buildMinWithVersion: {
+        options: {
+          wrap: 'xssFilters'
+        },
+        src: 'src/<%= pkg.name %>.js',
+        dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.min.js'
       }
     },
     mocha_istanbul: {
@@ -69,7 +81,7 @@ module.exports = function(grunt) {
       }
     },
     clean: {
-      all: ['dist', 'artifacts', 'node_modules']
+      all: ['artifacts', 'node_modules', 'bower_components']
     }
   });
 
@@ -78,11 +90,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-jsdoc');
 
   grunt.registerTask('test', ['jshint', 'mocha_istanbul']);
-  grunt.registerTask('dist', ['browserify', 'uglify', 'copy:buildFile'])
+  grunt.registerTask('dist', ['browserify', 'uglify'])
   grunt.registerTask('docs', ['jsdoc']);
   grunt.registerTask('default', ['test', 'dist']);
 

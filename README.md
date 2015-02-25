@@ -6,10 +6,7 @@ Secure XSS Filters
 
 - **More Secure.** Context-dependent output filters that are developer-friendly. It is safe to apply these filters like so: 
 
-  ```javascript
-el.innerHTML = "<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" 
-                 + xssFilters.uriInHTMLData(url) + "</a>";
-```
+  `document.write("<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" + xssFilters.uriInHTMLData(url) + "</a>");`
 
   In this example, the traditional wisdom of blindly escaping the five well-known characters (`&` `<` `>` `'` `"`) would not stop XSS (e.g., when `url` is equal to `javascript:alert(1)` or ` onclick=alert(1)`).
 

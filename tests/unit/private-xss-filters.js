@@ -13,7 +13,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     require("mocha");
 
     var expect = require('expect.js');
-    var filter = require('../../src/private-xss-filters');
+    var filter = require('../../src/xss-filters')._privFilters;
     var testutils = require('../utils.js');
 
     describe("private-xss-filters: existence tests", function() {
