@@ -16,6 +16,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     var testutils = require('../utils.js');
 
     delete filter._privFilters;
+    delete filter._getPrivFilters;
 
     describe("xss-filters: existence tests", function() {
 
