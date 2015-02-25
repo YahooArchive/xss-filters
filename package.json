@@ -1,10 +1,10 @@
 {
   "name": "xss-filters",
-  "version": "1.0.2",
-  "licenses":[
+  "version": "1.0.3",
+  "licenses": [
     {
-      "type" : "BSD",
-      "url" : "https://github.com/yahoo/xss-filters/blob/master/LICENSE"
+      "type": "BSD",
+      "url": "https://github.com/yahoo/xss-filters/blob/master/LICENSE"
     }
   ],
   "description": "Secure XSS Filters - Just sufficient output filtering to prevent XSS!",
@@ -53,7 +53,6 @@
     "grunt-contrib-copy": "^0.7.0",
     "grunt-contrib-jshint": "^0.11.0",
     "grunt-contrib-uglify": "^0.7.0",
-    "grunt-copy": "^0.1.0",
     "grunt-jsdoc": "^0.5.7",
     "grunt-mocha-istanbul": "^2.3.0"
   },
