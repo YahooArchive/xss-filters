@@ -116,7 +116,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'j&#x61;&#x76;&#x61&#115&#99&#114&#105&#112&#116&#x3a;alert(0)',
         'javascript:javascript:alert(0)',
 
-        'vbscript:',
+        'vbscript&colon;',
         '&Tab;&#X0a;&NewLine;v&#98scripT:',
 
         'https://www.yahoo.com',
@@ -142,7 +142,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'x-j&#x61;&#x76;&#x61&#115&#99&#114&#105&#112&#116&#x3a;alert(0)',
         'x-javascript:javascript:alert(0)',
 
-        'x-vbscript:',
+        'x-vbscript&colon;',
         'x-&Tab;&#X0a;&NewLine;v&#98scripT:',
 
         'https://www.yahoo.com',
