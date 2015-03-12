@@ -87,51 +87,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         });
     });
 
-
-    describe("private-xss-filters: mapping tests", function() {
-
-        // TODO: remove the following mapping test when the mapping is removed
-        it('filter yd exists', function() {
-            expect(filter.FILTER_DATA).to.eql('yd');
-        });
-
-        it('filter yc exists', function() {
-            expect(filter.FILTER_COMMENT).to.eql('yc');
-        });
-
-        it('filter yavu exists', function() {
-            expect(filter.FILTER_ATTRIBUTE_VALUE_UNQUOTED).to.eql('yavu');
-        });
-
-        it('filter yavs exists', function() {
-            expect(filter.FILTER_ATTRIBUTE_VALUE_SINGLE_QUOTED).to.eql('yavs');
-        });
-
-        it('filter yavd exists', function() {
-            expect(filter.FILTER_ATTRIBUTE_VALUE_DOUBLE_QUOTED).to.eql('yavd');
-        });
-
-        it('filter yu exists', function() {
-            expect(filter.FILTER_ENCODE_URI).to.eql('yu');
-        });
-
-        it('filter yuc exists', function() {
-            expect(filter.FILTER_ENCODE_URI_COMPONENT).to.eql('yuc');
-        });
-
-        it('filter yubl exists', function() {
-            expect(filter.FILTER_URI_SCHEME_BLACKLIST).to.eql('yubl');
-        });
-
-        it('filter yufull exists', function() {
-            expect(filter.FILTER_FULL_URI).to.eql('yufull');
-        });
-
-        it('filter y exists', function() {
-            expect(filter.FILTER_NOT_HANDLE).to.eql('y');
-        });
-    });
-
     describe("private-xss-filters: error and data type tests", function() {
 
         // an feature indicator of which encodeURI() and encodeURIComponent is used
@@ -226,9 +181,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     describe("private-xss-filters: unchained state transition tests", function() {
         
         it('filter y state transition test', function() {
-            var s = "foo&<>\"' bar&<>\"'";
+            var s = "foo&<>\"'` bar&<>\"' &lt;";
             var o = filter.y(s);
-            expect(o).to.eql('foo&amp;&lt;&gt;&quot;&#39; bar&amp;&lt;&gt;&quot;&#39;');
+            expect(o).to.eql('foo&amp;&lt;&gt;&quot;&#39;&#96; bar&amp;&lt;&gt;&quot;&#39; &amp;lt;');
         });
 
         it('filter yd state transition test', function() {
@@ -247,23 +202,26 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filter yav-single-quoted state transition test', function() {
             testutils.test_yav(filter.yavs, [
-                'foo&<>&#39;" \t\n\f', '\f', '',
+                'foo&<>&#39;"` \t\n\f', '\f', '',
                 '&#39;&#39;', ' &#39;&#39;', '\t&#39;&#39;', '\n&#39;&#39;', '\f&#39;&#39;',
-                '""',         ' ""',         '\t""',         '\n""',         '\f""']);
+                '""',         ' ""',         '\t""',         '\n""',         '\f""',
+                '``',         ' ``',         '\t``',         '\n``',         '\f``']);
         });
 
         it('filter yav-double-quoted state transition test', function() {
             testutils.test_yav(filter.yavd, [
-                'foo&<>\'&quot; \t\n\f', '\f', '',
+                'foo&<>\'&quot;` \t\n\f', '\f', '',
                 "''",           " ''",           "\t''",           "\n''",           "\f''", 
-                '&quot;&quot;', ' &quot;&quot;', '\t&quot;&quot;', '\n&quot;&quot;', '\f&quot;&quot;']);
+                '&quot;&quot;', ' &quot;&quot;', '\t&quot;&quot;', '\n&quot;&quot;', '\f&quot;&quot;',
+                '``',           ' ``',           '\t``',           '\n``',           '\f``']);
         });
         
         it('filter yav-unquoted state transition test', function() {
             testutils.test_yav(filter.yavu, [
-                'foo&<&gt;\'"&#32;&Tab;&NewLine;&#12;', '&#12;', '\u0000',
-                "&#39;'",  "&#32;''", "&Tab;''", "&NewLine;''", "&#12;''",
-                '&quot;"', '&#32;""', '&Tab;""', '&NewLine;""', '&#12;""']);
+                'foo&<&gt;\'"`&#32;&#9;&#10;&#12;', '&#12;', '\u0000',
+                "&#39;'",  "&#32;''", "&#9;''", "&#10;''", "&#12;''",
+                '&quot;"', '&#32;""', '&#9;""', '&#10;""', '&#12;""',
+                '&#96;`',  '&#32;``', '&#9;``', '&#10;``', '&#12;``']);
         });
 
         it('filter yu state transition test', function() {

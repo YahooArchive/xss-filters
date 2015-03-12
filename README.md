@@ -8,7 +8,7 @@ Secure XSS Filters
 
   `document.write("<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" + xssFilters.uriInHTMLData(url) + "</a>");`
 
-  In this example, the traditional wisdom of blindly escaping the five well-known characters (`&` `<` `>` `'` `"`) would not stop XSS (e.g., when `url` is equal to `javascript:alert(1)` or ` onclick=alert(1)`).
+  In this example, the traditional wisdom of blindly escaping the five well-known characters (`&` `<` `>` `'` `"` `` ` ``) would not stop XSS (e.g., when `url` is equal to `javascript:alert(1)` or ` onclick=alert(1)`).
 
 - **Just Sufficient Encoding.** Encode the *minimal* set of characters to thwart JavaScript executions, thus preventing XSS attacks while keeping most characters intact. Say goodbye to double-encoding problems such as '&amp;amp;lt;', as often resulted from traditional filters!!
 
@@ -47,6 +47,8 @@ app.get('/', function(req, res){
 Simply download the latest minified version from the [`dist/`](./dist) folder. Embed it in your HTML file, and all filters are available in a global object called `xssFilters`.
 
 ```html
+<!doctype html><!-- You need HTML 5 mode for browser -->
+...
 <script src="dist/xss-filters.min.js"></script>
 <script>
 var firstname = "..."; //an untrusted input collected from user
@@ -72,11 +74,11 @@ and retrieve your data with `document.getElementById('strJS').value`.
 ### The API
 
 There are five context-sensitive filters for generic input:
- - `<div>``{{{inHTMLData data}}}``</div>`
- - `<!--``{{{inHTMLComment comment}}}``-->`
- - `<input value='``{{{inSingleQuotedAttr value}}}``'/>`
- - `<input value="``{{{inDoubleQuotedAttr value}}}``"/>`
- - `<input value=``{{{inUnQuotedAttr value}}}``/>`
+ - `<div>` `{{{inHTMLData data}}}` `</div>`
+ - `<!--` `{{{inHTMLComment comment}}}` `-->`
+ - `<input value='` `{{{inSingleQuotedAttr value}}}` `'/>`
+ - `<input value="` `{{{inDoubleQuotedAttr value}}}` `"/>`
+ - `<input value=` `{{{inUnQuotedAttr value}}}` `/>`
 
 > Here we use {{{ }}} to indicate output expression to ease illustrations
 
