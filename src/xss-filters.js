@@ -392,7 +392,7 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @function module:xss-filters#inUnQuotedAttr
 *
 * @param {string} s - An untrusted user input
-* @returns {string} The string s with any tab, LF, FF, space, and '>' encoded.
+* @returns {string} The string s with any tab, LF, FF, space, and '>' encoded. If the first char is either ' " or `, it is also encoded. If an empty string is encountered, return a NULL character '\u0000'.
 *
 * @description
 * <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
