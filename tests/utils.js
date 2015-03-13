@@ -59,15 +59,15 @@ exports.test_yc = function (filter, expectedResults) {
 };
 
 exports.test_yav = function (filter, expectedResults) {
-    if (!expectedResults || expectedResults.length !== 13)
-        throw new Error('must take 13 expected results');
+    if (!expectedResults || expectedResults.length !== 18)
+        throw new Error('must take 18 expected results');
 
     var str, o;
 
     o = filter(123);
     expect(o).to.eql('123');
 
-    str = 'foo&<>\'" \t\n\f';
+    str = 'foo&<>\'"` \t\n\f';
     o = filter(str);
     expect(o).to.eql(expectedResults[0]);
 
@@ -102,6 +102,18 @@ exports.test_yav = function (filter, expectedResults) {
     expect(o).to.eql(expectedResults[11]);
     o = filter('\f""');
     expect(o).to.eql(expectedResults[12]);
+
+    // test if prohibited state change
+    o = filter('``');
+    expect(o).to.eql(expectedResults[13]);
+    o = filter(' ``');
+    expect(o).to.eql(expectedResults[14]);
+    o = filter('\t``');
+    expect(o).to.eql(expectedResults[15]);
+    o = filter('\n``');
+    expect(o).to.eql(expectedResults[16]);
+    o = filter('\f``');
+    expect(o).to.eql(expectedResults[17]);
 };
 
 
