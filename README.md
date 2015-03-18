@@ -8,9 +8,9 @@ Secure XSS Filters
 
   `document.write("<a href=" + xssFilters.uriInUnquotedAttr(url) + ">" + xssFilters.uriInHTMLData(url) + "</a>");`
 
-  In this example, the traditional wisdom of blindly escaping the five well-known characters (`&` `<` `>` `'` `"` `` ` ``) would not stop XSS (e.g., when `url` is equal to `javascript:alert(1)` or ` onclick=alert(1)`).
+  In this example, the traditional wisdom of blindly escaping some special html entity characters (`&` `<` `>` `'` `"` `` ` ``) would not stop XSS (e.g., when `url` is equal to `javascript:alert(1)` or ` onclick=alert(1)`).
 
-- **Just Sufficient Encoding.** Encode the *minimal* set of characters to thwart JavaScript executions, thus preventing XSS attacks while keeping most characters intact. Say goodbye to double-encoding problems such as '&amp;amp;lt;', as often resulted from traditional filters!!
+- **Faster with Just Sufficient Encoding.** Encode the *minimal* set of characters to thwart JavaScript executions, thus preventing XSS attacks while keeping most characters intact. Compared to the traditional blindly escape filter, our filters are [up to two times faster](http://jsperf.com/context-sensitive-vs-blindly-escape), and there is no more double-encoding problems such as '&amp;amp;lt;'!!
 
   ![alt Visualizing the concept of just sufficient encoding](https://ierg4210.github.io/web/images/xss-filters/xss-filters.png)
   Figure 1. "Just sufficient" encoding based on the HTML5 spec.
