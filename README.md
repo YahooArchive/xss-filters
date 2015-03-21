@@ -16,8 +16,8 @@ Secure XSS Filters
   Figure 1. "Just sufficient" encoding based on the HTML5 spec.
 
 ## Design
-
-- **Standards Compliant.** We redesign XSS filters based on the modern [HTML 5 Specification](https://html.spec.whatwg.org/multipage/syntax.html#syntax). The principle is to escape characters specific to each non-scriptable output context. Hence, untrusted inputs, once sanitized by context-sensitive escaping, cannot break out from the containing context. This approach stops malicious inputs from being executed as scripts, and also prevents the age-old problem of over/double-encoding.
+- **Automation.** Nothing can be better than applying context-sensitive output escaping automatically. Integration with Handlebars template engine is now available. Check out [express-secure-handlebars](https://www.npmjs.com/package/express-secure-handlebars) for server-side use, or [context-parser-handlebars](https://www.npmjs.com/package/context-parser-handlebars) for client-side use.
+- **Standards Compliant.** The XSS filters are designed based on the modern [HTML 5 Specification](https://html.spec.whatwg.org/multipage/syntax.html#syntax). The principle is to escape characters specific to each non-scriptable output context. Hence, untrusted inputs, once sanitized by context-sensitive escaping, cannot break out from the containing context. This approach stops malicious inputs from being executed as scripts, and also prevents the age-old problem of over/double-encoding.
 - **Carefully Designed.** Every filter is heavily scrutinized by Yahoo Security Engineers. The specific sets of characters that require encoding are minimized to preserve usability to the greatest extent possible.
 
 ## Quick Start
@@ -40,6 +40,8 @@ app.get('/', function(req, res){
   var firstname = req.query.firstname; //an untrusted input collected from user
   res.send('<h1> Hello, ' + xssFilters.inHTMLData(firstname) + '!</h1>');
 });
+
+app.listen(3000);
 ```
 
 ### Client-side (browser)
@@ -63,7 +65,7 @@ API Documentations
 
 (1) Filters **MUST ONLY** be applied to UTF-8-encoded documents.
 
-(2) **DON'T** apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>`, `<embed>`, and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. It is **unsafe** to permit untrusted input inside a scriptable context. 
+(2) **DON'T** apply any filters inside any scriptable contexts, i.e., `<script>`, `<style>`, `<object>`, `<embed>`, and `<svg>` tags as well as `style=""` and `onXXX=""` (e.g., `onclick`) attributes. It is **unsafe** to permit untrusted input inside a scriptable context. 
 
 A workaround, if you need to include data for JS, is to use:
 ```html
