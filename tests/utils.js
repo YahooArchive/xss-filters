@@ -122,14 +122,14 @@ exports.test_yubl = function (filter, expectedResults) {
         '\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\
 \u000A\u000B\u000C\u000D\u000E\u000F\u0010\u0011\u0012\
 \u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\
-\u001C\u001D\u001E\u001F\u0020j\nav&#x61;\rscript\t:',
+\u001C\u001D\u001E\u001F\u0020j\nav&#x61;\rscript\t&col\u0000on;',
         '&Tab;&#X0a;&NewLine;j&#x61;&NewLine;&#x76;&#x61&Tab;&Tab;&#115&#99&#114&#105&#112&#116&#x3a;alert(0)',
         'JavascripT:alert(0)',
         'j&#x61;&#x76;&#x61&#115&#99&#114&#105&#112&#116&#x3a;alert(0)',
         'javascript:javascript:alert(0)',
 
         'vbscript&colon;',
-        '&Tab;&#X0a;&NewLine;v&#98scripT:',
+        '&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
 
         'https://www.yahoo.com',
         'http://www.yahoo.com',
@@ -138,6 +138,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'data:application/javascript',
         'data:text/css',
         'data:text/html',
+        'mhtml:http://somewhere/',
 
         'javajavascript:script:alert(0)',
         'javaXscript:alert(0)',
@@ -148,22 +149,23 @@ exports.test_yubl = function (filter, expectedResults) {
         '%01%02%03%04%05%06%07%08%09\
 %0A%0B%0C%0D%0E%0F%10%11%12\
 %13%14%15%16%17%18%19%1A%1B\
-%1C%1D%1E%1F%20j%0Aav&#x61;%0Dscript%09:',
+%1C%1D%1E%1F%20j%0Aav&#x61;%0Dscript%09&col%00on;',
         'x-&Tab;&#X0a;&NewLine;j&#x61;&NewLine;&#x76;&#x61&Tab;&Tab;&#115&#99&#114&#105&#112&#116&#x3a;alert(0)',
         'x-JavascripT:alert(0)',
         'x-j&#x61;&#x76;&#x61&#115&#99&#114&#105&#112&#116&#x3a;alert(0)',
         'x-javascript:javascript:alert(0)',
 
         'x-vbscript&colon;',
-        'x-&Tab;&#X0a;&NewLine;v&#98scripT:',
+        'x-&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
 
         'https://www.yahoo.com',
         'http://www.yahoo.com',
         'ftp://ftp.yahoo.com',
-        'data:image/png',
-        'data:application/javascript',
-        'data:text/css',
-        'data:text/html',
+        'x-data:image/png',
+        'x-data:application/javascript',
+        'x-data:text/css',
+        'x-data:text/html',
+        'x-mhtml:http://somewhere/',
 
         'javajavascript:script:alert(0)',
         'javaXscript:alert(0)',
