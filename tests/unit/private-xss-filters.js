@@ -170,7 +170,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
             expect(filter.yavd(str)).to.eql(result);
             expect(filter.yavs(str)).to.eql(result);
-            expect(filter.yavu(str)).to.eql('\u0000');
+            expect(filter.yavu(str)).to.eql('\uFFFD');
 
             expect(filter.yu(str)).to.eql(result);
             expect(filter.yuc(str)).to.eql(result);
@@ -218,7 +218,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         
         it('filter yav-unquoted state transition test', function() {
             testutils.test_yav(filter.yavu, [
-                'foo&<&gt;\'"`&#32;&#9;&#10;&#12;', '&#12;', '\u0000',
+                'foo&<&gt;\'"`&#32;&#9;&#10;&#12;', '&#12;', '\uFFFD',
                 "&#39;'",  "&#32;''", "&#9;''", "&#10;''", "&#12;''",
                 '&quot;"', '&#32;""', '&#9;""', '&#10;""', '&#12;""',
                 '&#96;`',  '&#32;``', '&#9;``', '&#10;``', '&#12;``']);

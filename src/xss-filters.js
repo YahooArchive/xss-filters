@@ -138,6 +138,7 @@ exports._getPrivFilters = function () {
         },
 
         // FOR DETAILS, refer to inUnQuotedAttr()
+        // Reference: http://shazzer.co.uk/vector/Quoteless-attributes-breaker
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
         yavu: function (s) {
@@ -174,11 +175,11 @@ exports._getPrivFilters = function () {
             //   attribute value, even though this is how HTML5 is specified.
             // Rationale 2: an empty string can effectively alter its immediate
             //   subsequent state, which violates our design principle. As per 
-            //   the HTML 5 spec, NULL or \u0000 is the magic character to end 
+            //   the HTML 5 spec, NULL or \uFFFD is the magic character to end 
             //   the comment state, which therefore will not mess up later 
             //   contexts.
             // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-            return (s === '') ? '\x00' : s;
+            return (s === '') ? '\uFFFD' : s;
         },
 
         yu: encodeURI,
