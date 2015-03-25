@@ -14,8 +14,8 @@ exports._getPrivFilters = function () {
     var STR_UD = 'undefined',
         STR_NL = 'null',
         LT     = /</g,
-        QUOT   = /\"/g,
-        SQUOT  = /\'/g,
+        QUOT   = /"/g,
+        SQUOT  = /'/g,
         NULL   = /\x00/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g;
 
@@ -23,7 +23,7 @@ exports._getPrivFilters = function () {
 
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
     var BEFORE_ATTR_VALUE_CHARS = /^["'`]/;
-    var ATTR_VALUE_UNQUOTED_CHARS = /[\t\n\f >]/g;
+    var ATTR_VALUE_UNQUOTED_CHARS = /[\u0009-\u000D >]/g;
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
@@ -138,7 +138,8 @@ exports._getPrivFilters = function () {
         },
 
         // FOR DETAILS, refer to inUnQuotedAttr()
-        // Reference: http://shazzer.co.uk/vector/Quoteless-attributes-breaker
+        // Reference: http://shazzer.co.uk/database/All/Characters-which-break-attributes-without-quotes?privateKey=
+        
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
         yavu: function (s) {
@@ -146,38 +147,39 @@ exports._getPrivFilters = function () {
             if (s === null)          { return STR_NL; }
 
             s = s.toString().replace(ATTR_VALUE_UNQUOTED_CHARS, function (m) {
-                if (m === '\t')    { return '&#9;';      } // in hex: 09
-                if (m === '\n')    { return '&#10;';     } // in hex: 0A
-                if (m === '\f')    { return '&#12;';     } // in hex: 0C
-                if (m === ' ')     { return '&#32;';     } // in hex: 20
-                /*if (m === '>')*/   return '&gt;';
+                return m === '\t' ? '&#9;'  // in hex: 09
+                    :  m === '\n' ? '&#10;' // in hex: 0A
+                    :  m === '\v' ? '&#11;' // in hex: 0B  for IE
+                    :  m === '\f' ? '&#12;' // in hex: 0C
+                    :  m === '\r' ? '&#13;' // in hex: 0D
+                    :  m === ' '  ? '&#32;' // in hex: 20
+                    :/*m === '>'?*/ '&gt;';
             });
 
-            // if s starts with ' or ", encode it resp. as &#39; or &quot; to enforce the attr value (unquoted) state
-            // if instead starts with some whitespaces [\t\n\f ] then optionally a quote, 
+            // if s starts with ', " or `, encode it resp. as &#39;, &quot;, or &#96; to enforce the attr value (unquoted) state
+            // if instead starts with some whitespaces [\t\n\v\f\r >] then optionally a quote, 
             //    then the above encoding has already enforced the attr value (unquoted) state
             //    therefore, no need to encode the quote
             // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
+            // Reference: http://shazzer.co.uk/vector/Characters-allowed-attribute-quote
             s = s.replace(BEFORE_ATTR_VALUE_CHARS, function (m) {
                 if (m === '"')     { return '&quot;'; }
                 if (m === "'")     { return '&#39;';  }
                 /*if (m === '`')*/   return '&#96;';       // in hex: 60
             });
 
-            // Inject NULL character if an empty string is encountered in 
+            // Inject \uFFFD character if an empty string is encountered in 
             // unquoted attribute value state.
             //
             // Example:
             // <input value={{yavu s}} name="passwd"/>
             //
             // Rationale 1: our belief is that developers wouldn't expect an 
-            //   empty string would result in ' name="firstname"' rendered as 
+            //   empty string would result in ' name="passwd"' rendered as 
             //   attribute value, even though this is how HTML5 is specified.
             // Rationale 2: an empty string can effectively alter its immediate
-            //   subsequent state, which violates our design principle. As per 
-            //   the HTML 5 spec, NULL or \uFFFD is the magic character to end 
-            //   the comment state, which therefore will not mess up later 
-            //   contexts.
+            //   subsequent state, we choose \uFFFD to end the unquoted attr 
+            //   state, which therefore will not mess up later contexts.
             // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
             return (s === '') ? '\uFFFD' : s;
         },

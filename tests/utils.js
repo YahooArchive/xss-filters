@@ -67,7 +67,7 @@ exports.test_yav = function (filter, expectedResults) {
     o = filter(123);
     expect(o).to.eql('123');
 
-    str = 'foo&<>\'"` \t\n\f';
+    str = 'foo&<>\'"` \t\n\v\f\r';
     o = filter(str);
     expect(o).to.eql(expectedResults[0]);
 
