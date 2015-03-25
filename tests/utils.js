@@ -138,6 +138,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'data:application/javascript',
         'data:text/css',
         'data:text/html',
+        'mhtml:http://somewhere/',
 
         'javajavascript:script:alert(0)',
         'javaXscript:alert(0)',
@@ -164,6 +165,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'x-data:application/javascript',
         'x-data:text/css',
         'x-data:text/html',
+        'x-mhtml:http://somewhere/',
 
         'javajavascript:script:alert(0)',
         'javaXscript:alert(0)',

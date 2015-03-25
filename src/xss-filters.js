@@ -36,7 +36,7 @@ exports._getPrivFilters = function () {
     // Reference: http://shazzer.co.uk/database/All/Characters-after-javascript-uri
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#consume-a-character-reference
     // Reference for named characters: https://html.spec.whatwg.org/multipage/entities.json
-    var URI_BLACKLIST_PROTOCOLS = ['javascript', 'data', 'vbscript'],
+    var URI_BLACKLIST_PROTOCOLS = ['javascript', 'data', 'vbscript', 'mhtml'],
         URI_PROTOCOL_COLON = /(?::|&#[xX]0*3[aA];?|&#0*58;?|&colon;)/,
         URI_PROTOCOL_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|Tab;|NewLine;)/g,
         URI_PROTOCOL_WHITESPACES = /(?:^[\u0000-\u0020]+|[\t\n\r\x00]+)/g,
