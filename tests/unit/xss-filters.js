@@ -177,7 +177,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'foo--! ', 
                 '[if IE] ', 
                 'foo- ', 
-                'foo- ']);
+                'foo- ',
+                ' ><script>alert(1)</script>',
+                '---------- ><script>alert(1)</script>',
+                '--\uFFFD>']);
         });
 
 
@@ -261,7 +264,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'foo--! ', 
                 '%5Bif%20IE%5D', 
                 'foo- ', 
-                'foo- ']);
+                'foo- ',
+                '%3E%3Cscript%3Ealert(1)%3C/script%3E',
+                '----------%3E%3Cscript%3Ealert(1)%3C/script%3E',
+                '--%00%3E']);
             testutils.test_yufull(filter.uriInHTMLComment, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334] ']);
         });
 
@@ -308,7 +314,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'foo--! ', 
                 '%5Bif%20IE%5D', 
                 'foo- ', 
-                'foo- ']);
+                'foo- ',
+                '%3E%3Cscript%3Ealert(1)%3C/script%3E',
+                '----------%3E%3Cscript%3Ealert(1)%3C/script%3E',
+                '--%00%3E']);
             testutils.test_yu(filter.uriPathInHTMLComment);
         });
 
@@ -352,7 +361,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'foo--! ', 
                 '%5Bif%20IE%5D', 
                 'foo- ', 
-                'foo- ']);
+                'foo- ',
+                '%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E',
+                '----------%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E',
+                '--%00%3E']);
             testutils.test_yuc(filter.uriComponentInHTMLComment);
         });
 
