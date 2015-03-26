@@ -17,7 +17,7 @@ Secure XSS Filters
 
 ## Design
 - **Automation.** Nothing can be better than applying context-sensitive output escaping automatically. Integration with Handlebars template engine is now available. Check out [express-secure-handlebars](https://www.npmjs.com/package/express-secure-handlebars) for server-side use, or [context-parser-handlebars](https://www.npmjs.com/package/context-parser-handlebars) for client-side use.
-- **Standards Compliant.** The XSS filters are designed based on the modern [HTML 5 Specification](https://html.spec.whatwg.org/multipage/syntax.html#syntax). The principle is to escape characters specific to each non-scriptable output context. Hence, untrusted inputs, once sanitized by context-sensitive escaping, cannot break out from the containing context. This approach stops malicious inputs from being executed as scripts, and also prevents the age-old problem of over/double-encoding.
+- **Standards Compliant.** The XSS filters are designed primarily based on the modern [HTML 5 Specification](https://html.spec.whatwg.org/multipage/syntax.html#syntax). The principle is to escape characters specific to each non-scriptable output context. Hence, untrusted inputs, once sanitized by context-sensitive escaping, cannot break out from the containing context. This approach stops malicious inputs from being executed as scripts, and also prevents the age-old problem of over/double-encoding.
 - **Carefully Designed.** Every filter is heavily scrutinized by Yahoo Security Engineers. The specific sets of characters that require encoding are minimized to preserve usability to the greatest extent possible.
 
 ## Quick Start
