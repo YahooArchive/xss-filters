@@ -314,15 +314,26 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @function module:xss-filters#inUnQuotedAttr
 *
 * @param {string} s - An untrusted user input
-* @returns {string} The string s with any tab, LF, FF, space, and '>' encoded. If the first char is either ' " or `, it is also encoded. If an empty string is encountered, return a NULL character '\u0000'.
+* @returns {string} If s contains any state breaking chars (\t, \n, \v, \f, \r, space, and >), they are escaped and encoded into their equivalent HTML entity representations. If s starts with ', " or `, they are escaped to enforce the attr value (unquoted) state. If the whole string is empty or all null, inject a \uFFFD character.
 *
 * @description
 * <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
 * <p class="warning">Warning: If you're working on URI/components, use the more specific uri___InUnQuotedAttr filter </p>
-* This filter is to be placed in HTML Attribute Value (unquoted) state to encode tab, LF, FF, space, and '>' into their equivalent HTML entity representations.
-*
+* <p>Regarding \uFFFD injection,<br/>
+*        Rationale 1: our belief is that developers wouldn't expect an 
+*          empty string would result in ' name="passwd"' rendered as 
+*          attribute value, even though this is how HTML5 is specified.<br/>
+*        Rationale 2: an empty or all null string (for IE) can 
+*          effectively alter its immediate subsequent state, we choose
+*          \uFFFD to end the unquoted attr 
+*          state, which therefore will not mess up later contexts.<br/>
+*        Rationale 3: Since IE 6, it is verified that NULL chars are stripped.<br/>
+*        Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state</p>
 * <ul>
 * <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state">HTML5 Attribute Value (Unquoted) State</a></li>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state">HTML5 Before Attribute Value State</a></li>
+* <li><a href="http://shazzer.co.uk/database/All/Characters-which-break-attributes-without-quotes">Shazzer - Characters-which-break-attributes-without-quotes</a></li>
+* <li><a href="http://shazzer.co.uk/vector/Characters-allowed-attribute-quote">Shazzer - Characters-allowed-attribute-quote</a></li>
 * </ul>
 *
 * @example
