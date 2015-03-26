@@ -170,7 +170,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
             expect(filter.yavd(str)).to.eql(result);
             expect(filter.yavs(str)).to.eql(result);
-            expect(filter.yavu(str)).to.eql('\u0000');
+            expect(filter.yavu(str)).to.eql('\uFFFD');
 
             expect(filter.yu(str)).to.eql(result);
             expect(filter.yuc(str)).to.eql(result);
@@ -202,7 +202,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filter yav-single-quoted state transition test', function() {
             testutils.test_yav(filter.yavs, [
-                'foo&<>&#39;"` \t\n\f', '\f', '',
+                'foo&<>&#39;"` \t\n\v\f\r', '\f', '',
                 '&#39;&#39;', ' &#39;&#39;', '\t&#39;&#39;', '\n&#39;&#39;', '\f&#39;&#39;',
                 '""',         ' ""',         '\t""',         '\n""',         '\f""',
                 '``',         ' ``',         '\t``',         '\n``',         '\f``']);
@@ -210,7 +210,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filter yav-double-quoted state transition test', function() {
             testutils.test_yav(filter.yavd, [
-                'foo&<>\'&quot;` \t\n\f', '\f', '',
+                'foo&<>\'&quot;` \t\n\v\f\r', '\f', '',
                 "''",           " ''",           "\t''",           "\n''",           "\f''", 
                 '&quot;&quot;', ' &quot;&quot;', '\t&quot;&quot;', '\n&quot;&quot;', '\f&quot;&quot;',
                 '``',           ' ``',           '\t``',           '\n``',           '\f``']);
@@ -218,7 +218,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         
         it('filter yav-unquoted state transition test', function() {
             testutils.test_yav(filter.yavu, [
-                'foo&<&gt;\'"`&#32;&#9;&#10;&#12;', '&#12;', '\u0000',
+                'foo&<&gt;\'"`&#32;&#9;&#10;&#11;&#12;&#13;', '&#12;', '\uFFFD',
                 "&#39;'",  "&#32;''", "&#9;''", "&#10;''", "&#12;''",
                 '&quot;"', '&#32;""', '&#9;""', '&#10;""', '&#12;""',
                 '&#96;`',  '&#32;``', '&#9;``', '&#10;``', '&#12;``']);

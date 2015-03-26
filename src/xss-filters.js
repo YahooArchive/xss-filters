@@ -14,16 +14,15 @@ exports._getPrivFilters = function () {
     var STR_UD = 'undefined',
         STR_NL = 'null',
         LT     = /</g,
-        QUOT   = /\"/g,
-        SQUOT  = /\'/g,
+        QUOT   = /"/g,
+        SQUOT  = /'/g,
         NULL   = /\x00/g,
+        // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
+        // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
+        SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g;
 
     var COMMENT_SENSITIVE_CHARS = /(--!?>|--?!?$|\]>|\]$)/g;
-
-    // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-    var BEFORE_ATTR_VALUE_CHARS = /^["'`]/;
-    var ATTR_VALUE_UNQUOTED_CHARS = /[\t\n\f >]/g;
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
@@ -138,47 +137,50 @@ exports._getPrivFilters = function () {
         },
 
         // FOR DETAILS, refer to inUnQuotedAttr()
+        // PART A.
+        // if s contains any state breaking chars (\t, \n, \v, \f, \r, space, and >),
+        // they are escaped and encoded into their equivalent HTML entity representations. 
+        // Reference: http://shazzer.co.uk/database/All/Characters-which-break-attributes-without-quotes
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
+        //
+        // PART B. 
+        // if s starts with ', " or `, encode it resp. as &#39;, &quot;, or &#96; to 
+        // enforce the attr value (unquoted) state
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
+        // Reference: http://shazzer.co.uk/vector/Characters-allowed-attribute-quote
+        // 
+        // PART C.
+        // Inject a \uFFFD character if an empty or all null string is encountered in 
+        // unquoted attribute value state.
+        // 
+        // Rationale 1: our belief is that developers wouldn't expect an 
+        //   empty string would result in ' name="passwd"' rendered as 
+        //   attribute value, even though this is how HTML5 is specified.
+        // Rationale 2: an empty or all null string (for IE) can 
+        //   effectively alter its immediate subsequent state, we choose
+        //   \uFFFD to end the unquoted attr 
+        //   state, which therefore will not mess up later contexts.
+        // Rationale 3: Since IE 6, it is verified that NULL chars are stripped.
+        // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
+        // 
+        // Example:
+        // <input value={{{yavu s}}} name="passwd"/>
         yavu: function (s) {
-            if (typeof s === STR_UD) { return STR_UD; }
-            if (s === null)          { return STR_NL; }
-
-            s = s.toString().replace(ATTR_VALUE_UNQUOTED_CHARS, function (m) {
-                if (m === '\t')    { return '&#9;';      } // in hex: 09
-                if (m === '\n')    { return '&#10;';     } // in hex: 0A
-                if (m === '\f')    { return '&#12;';     } // in hex: 0C
-                if (m === ' ')     { return '&#32;';     } // in hex: 20
-                /*if (m === '>')*/   return '&gt;';
-            });
-
-            // if s starts with ' or ", encode it resp. as &#39; or &quot; to enforce the attr value (unquoted) state
-            // if instead starts with some whitespaces [\t\n\f ] then optionally a quote, 
-            //    then the above encoding has already enforced the attr value (unquoted) state
-            //    therefore, no need to encode the quote
-            // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-            s = s.replace(BEFORE_ATTR_VALUE_CHARS, function (m) {
-                if (m === '"')     { return '&quot;'; }
-                if (m === "'")     { return '&#39;';  }
-                /*if (m === '`')*/   return '&#96;';       // in hex: 60
-            });
-
-            // Inject NULL character if an empty string is encountered in 
-            // unquoted attribute value state.
-            //
-            // Example:
-            // <input value={{yavu s}} name="passwd"/>
-            //
-            // Rationale 1: our belief is that developers wouldn't expect an 
-            //   empty string would result in ' name="firstname"' rendered as 
-            //   attribute value, even though this is how HTML5 is specified.
-            // Rationale 2: an empty string can effectively alter its immediate
-            //   subsequent state, which violates our design principle. As per 
-            //   the HTML 5 spec, NULL or \u0000 is the magic character to end 
-            //   the comment state, which therefore will not mess up later 
-            //   contexts.
-            // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-            return (s === '') ? '\x00' : s;
+            return typeof s === STR_UD ? STR_UD
+                : s === null           ? STR_NL
+                : s.toString().replace(SPECIAL_ATTR_VALUE_UNQUOTED_CHARS, function (m) {
+                    return m === '\t' ? '&#9;'  // in hex: 09
+                        :  m === '\n' ? '&#10;' // in hex: 0A
+                        :  m === '\v' ? '&#11;' // in hex: 0B  for IE
+                        :  m === '\f' ? '&#12;' // in hex: 0C
+                        :  m === '\r' ? '&#13;' // in hex: 0D
+                        :  m === ' '  ? '&#32;' // in hex: 20
+                        :  m === '>'  ? '&gt;'
+                        :  m === '"'  ? '&quot;'
+                        :  m === "'"  ? '&#39;'
+                        :  m === '`'  ? '&#96;'
+                        : /*empty or all null*/ '\uFFFD';
+                });
         },
 
         yu: encodeURI,
@@ -312,15 +314,26 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @function module:xss-filters#inUnQuotedAttr
 *
 * @param {string} s - An untrusted user input
-* @returns {string} The string s with any tab, LF, FF, space, and '>' encoded. If the first char is either ' " or `, it is also encoded. If an empty string is encountered, return a NULL character '\u0000'.
+* @returns {string} If s contains any state breaking chars (\t, \n, \v, \f, \r, space, and >), they are escaped and encoded into their equivalent HTML entity representations. If s starts with ', " or `, they are escaped to enforce the attr value (unquoted) state. If the whole string is empty or all null, inject a \uFFFD character.
 *
 * @description
 * <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
 * <p class="warning">Warning: If you're working on URI/components, use the more specific uri___InUnQuotedAttr filter </p>
-* This filter is to be placed in HTML Attribute Value (unquoted) state to encode tab, LF, FF, space, and '>' into their equivalent HTML entity representations.
-*
+* <p>Regarding \uFFFD injection,<br/>
+*        Rationale 1: our belief is that developers wouldn't expect an 
+*          empty string would result in ' name="passwd"' rendered as 
+*          attribute value, even though this is how HTML5 is specified.<br/>
+*        Rationale 2: an empty or all null string (for IE) can 
+*          effectively alter its immediate subsequent state, we choose
+*          \uFFFD to end the unquoted attr 
+*          state, which therefore will not mess up later contexts.<br/>
+*        Rationale 3: Since IE 6, it is verified that NULL chars are stripped.<br/>
+*        Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state</p>
 * <ul>
 * <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state">HTML5 Attribute Value (Unquoted) State</a></li>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state">HTML5 Before Attribute Value State</a></li>
+* <li><a href="http://shazzer.co.uk/database/All/Characters-which-break-attributes-without-quotes">Shazzer - Characters-which-break-attributes-without-quotes</a></li>
+* <li><a href="http://shazzer.co.uk/vector/Characters-allowed-attribute-quote">Shazzer - Characters-allowed-attribute-quote</a></li>
 * </ul>
 *
 * @example
