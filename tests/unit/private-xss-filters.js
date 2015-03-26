@@ -197,7 +197,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'foo--! ', 
                 '[if IE] ', 
                 'foo- ', 
-                'foo- ']);
+                'foo- ',
+                ' ><script>alert(1)</script>',
+                '---------- ><script>alert(1)</script>',
+                '--\uFFFD>']);
         });
 
         it('filter yav-single-quoted state transition test', function() {

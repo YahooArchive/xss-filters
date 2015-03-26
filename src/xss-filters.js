@@ -17,12 +17,9 @@ exports._getPrivFilters = function () {
         QUOT   = /"/g,
         SQUOT  = /'/g,
         NULL   = /\x00/g,
-        // Reference: https://html.spec.whatwg.org/multipage/syntax.html#before-attribute-value-state
-        // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(unquoted)-state
         SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
-        SPECIAL_HTML_CHARS = /[&<>"'`]/g;
-
-    var COMMENT_SENSITIVE_CHARS = /(--!?>|--?!?$|\]>|\]$)/g;
+        SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
+        SPECIAL_COMMENT_CHARS = /(?:^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
@@ -38,7 +35,7 @@ exports._getPrivFilters = function () {
     var URI_BLACKLIST_PROTOCOLS = ['javascript', 'data', 'vbscript', 'mhtml'],
         URI_PROTOCOL_COLON = /(?::|&#[xX]0*3[aA];?|&#0*58;?|&colon;)/,
         URI_PROTOCOL_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|Tab;|NewLine;)/g,
-        URI_PROTOCOL_WHITESPACES = /(?:^[\u0000-\u0020]+|[\t\n\r\x00]+)/g,
+        URI_PROTOCOL_WHITESPACES = /(?:^[\x00-\x20]+|[\t\n\r\x00]+)/g,
         codePointConvertor = String.fromCodePoint || String.fromCharCode,
         x;
 
@@ -67,22 +64,19 @@ exports._getPrivFilters = function () {
          * <p>This filter is a fallback to use the standard HTML escaping (i.e., encoding &<>"'`)
          * in contexts that are currently not handled by the automatic context-sensitive templating solution.</p>
          *
-         * Workaround this problem by following the suggestion below:
-         * Use <input id="strJS" value="{{xssFilters.inHTMLData(data)}}"> 
-         * and retrieve your data with document.getElementById('strJS').value. 
-         *
+         * See workaround at https://github.com/yahoo/xss-filters#warnings
          */
         y: function(s) {
             return typeof s === STR_UD ? STR_UD
                  : s === null          ? STR_NL
                  : s.toString()
                     .replace(SPECIAL_HTML_CHARS, function (m) {
-                        if (m === '&')      { return '&amp;';  }
-                        if (m === '<')      { return '&lt;';   }
-                        if (m === '>')      { return '&gt;';   }
-                        if (m === '"')      { return '&quot;'; }
-                        if (m === "'")      { return '&#39;';  }
-                        /*if (m === '`')*/    return '&#96;';       // in hex: 60
+                        return m === '&' ? '&amp;'
+                            :  m === '<' ? '&lt;'
+                            :  m === '>' ? '&gt;'
+                            :  m === '"' ? '&quot;'
+                            :  m === "'" ? '&#39;'
+                            :  /*m === '`'*/ '&#96;';       // in hex: 60
                     });
         },
 
@@ -96,10 +90,14 @@ exports._getPrivFilters = function () {
         },
 
         // FOR DETAILS, refer to inHTMLComment()
-        // '-->' and '--!>' are modified as '-- >' and '--! >' so as stop comment state breaking
-        // for string ends with '--!', '--', or '-' are appended with a space, so as to stop collaborative state breaking at {{s}}>, {{s}}!>, {{s}}->
+        // All NULL characters in s are first replaced with \uFFFD.
+        // If s contains -->, --!>, or starts with -*>, insert a space right before > to stop state breaking at <!--{{{yc s}}}-->
+        // If s ends with --!, --, or -, append a space to stop collaborative state breaking at {{{yc s}}}>, {{{yc s}}}!>, {{{yc s}}}-!>, {{{yc s}}}->
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#comment-state
-        // ']>' and 'ends with ]' patterns deal with IE conditional comments. verified in IE that '] >' can stop that.
+        // Reference: http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment-3
+        // Reference: http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment
+        // Reference: http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment-0021
+        // If s contains ]> or ends with ], append a space after ] is verified in IE to stop IE conditional comments.
         // Reference: http://msdn.microsoft.com/en-us/library/ms537512%28v=vs.85%29.aspx
         // We do not care --\s>, which can possibly be intepreted as a valid close comment tag in very old browsers (e.g., firefox 3.6), as specified in the html4 spec
         // Reference: http://www.w3.org/TR/html401/intro/sgmltut.html#h-3.2.4
@@ -107,14 +105,14 @@ exports._getPrivFilters = function () {
             return typeof s === STR_UD ? STR_UD
                  : s === null          ? STR_NL
                  : s.toString()
-                    .replace(COMMENT_SENSITIVE_CHARS, function(m){
-                        if (m === '-->')  { return '-- >';  }
-                        if (m === '--!>') { return '--! >'; }
-                        if (m === '--!')  { return '--! ';  }
-                        if (m === '--')   { return '-- ';   }
-                        if (m === '-')    { return '- ';    }
-                        if (m === ']>')   { return '] >';   }
-                        /*if (m === ']')*/  return '] ';
+                    .replace(NULL, '\uFFFD')
+                    .replace(SPECIAL_COMMENT_CHARS, function(m){
+                        return m === '--!' || m === '--' || m === '-' || m === ']' ? m + ' '
+                            :/*
+                            :  m === ']>'   ? '] >'
+                            :  m === '-->'  ? '-- >'
+                            :  m === '--!>' ? '--! >'
+                            : /-*!?>/.test(m) ? */ m.slice(0, -1) + ' >';
                     });
         },
 
@@ -242,20 +240,24 @@ function uriInAttr (s, yav, yu) {
 */
 exports.inHTMLData = privFilters.yd;
 
-
 /**
 * @function module:xss-filters#inHTMLComment
 *
 * @param {string} s - An untrusted user input
-* @returns {string} The string s with '-->', '--!>', ']>' respectively replaced with '-- >', '--! >', '] >'. In addition, a space is appended to those string s that ends with '-', '--', '--!', and ']'. 
+* @returns {string} All NULL characters in s are first replaced with \uFFFD. If s contains -->, --!>, or starts with -*>, insert a space right before > to stop state breaking at <!--{{{yc s}}}-->. If s ends with --!, --, or -, append a space to stop collaborative state breaking at {{{yc s}}}>, {{{yc s}}}!>, {{{yc s}}}-!>, {{{yc s}}}->. If s contains ]> or ends with ], append a space after ] is verified in IE to stop IE conditional comments.
 *
 * @description
-* This filter is to be placed in HTML Comment context to disable any attempts in closing the html comment state
-* <p>Notice: --> and --!> are the syntaxes to close html comment state, while string that ends with -, --, or --! will also enable state closing if the variable is externally suffixed with -> or >.
-*            ']>' and string that ends with ']' are changed to '] >' and '] ' to disable Internet Explorer conditional comments, which are actually not part of the HTML 5 standard.</p>
 *
 * <ul>
+* <li><a href="http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment-3">Shazzer - Closing comments for -.-></a>
+* <li><a href="http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment">Shazzer - Closing comments for --.></a>
+* <li><a href="http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment-0021">Shazzer - Closing comments for .></a>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#comment-start-state">HTML5 Comment Start State</a></li>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#comment-start-dash-state">HTML5 Comment Start Dash State</a></li>
 * <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#comment-state">HTML5 Comment State</a></li>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#comment-end-dash-state">HTML5 Comment End Dash State</a></li>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#comment-end-state">HTML5 Comment End State</a></li>
+* <li><a href="https://html.spec.whatwg.org/multipage/syntax.html#comment-end-bang-state">HTML5 Comment End Bang State</a></li>
 * <li><a href="http://msdn.microsoft.com/en-us/library/ms537512%28v=vs.85%29.aspx">Conditional Comments in Internet Explorer</a></li>
 * </ul>
 *

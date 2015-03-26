@@ -24,8 +24,8 @@ exports.test_yd = function (filter, expectedResults) {
 };
 
 exports.test_yc = function (filter, expectedResults) {
-    if (!expectedResults || expectedResults.length !== 6)
-        throw new Error('must take 6 expected results');
+    if (!expectedResults || expectedResults.length !== 9)
+        throw new Error('must take 9 expected results');
 
     var str, o;
 
@@ -56,6 +56,18 @@ exports.test_yc = function (filter, expectedResults) {
     str = 'foo-';
     o = filter(str) + '-!>';
     expect(o).to.eql(expectedResults[5] + '-!>');
+
+    str = '><script>alert(1)</script>';
+    o = '<!--' + filter(str);
+    expect(o).to.eql('<!--' + expectedResults[6]);
+
+    str = '----------><script>alert(1)</script>';
+    o = '<!--' + filter(str);
+    expect(o).to.eql('<!--' + expectedResults[7]);
+
+    str = '--\x00>';
+    o = '<!--' + filter(str);
+    expect(o).to.eql('<!--' + expectedResults[8]);
 };
 
 exports.test_yav = function (filter, expectedResults) {
