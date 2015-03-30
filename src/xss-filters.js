@@ -19,7 +19,7 @@ exports._getPrivFilters = function () {
         NULL   = /\x00/g,
         SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
-        SPECIAL_COMMENT_CHARS = /(?:^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
+        SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
@@ -105,9 +105,9 @@ exports._getPrivFilters = function () {
             return typeof s === STR_UD ? STR_UD
                  : s === null          ? STR_NL
                  : s.toString()
-                    .replace(NULL, '\uFFFD')
                     .replace(SPECIAL_COMMENT_CHARS, function(m){
-                        return m === '--!' || m === '--' || m === '-' || m === ']' ? m + ' '
+                        return m === '\x00' ? '\uFFFD'
+                            : m === '--!' || m === '--' || m === '-' || m === ']' ? m + ' '
                             :/*
                             :  m === ']>'   ? '] >'
                             :  m === '-->'  ? '-- >'
