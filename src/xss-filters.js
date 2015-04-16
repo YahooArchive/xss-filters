@@ -167,16 +167,16 @@ exports._getPrivFilters = function () {
             return typeof s === STR_UD ? STR_UD
                 : s === null           ? STR_NL
                 : s.toString().replace(SPECIAL_ATTR_VALUE_UNQUOTED_CHARS, function (m) {
-                    return m === '\t' ? '&#9;'  // in hex: 09
-                        :  m === '\n' ? '&#10;' // in hex: 0A
-                        :  m === '\v' ? '&#11;' // in hex: 0B  for IE
-                        :  m === '\f' ? '&#12;' // in hex: 0C
-                        :  m === '\r' ? '&#13;' // in hex: 0D
-                        :  m === ' '  ? '&#32;' // in hex: 20
-                        :  m === '>'  ? '&gt;'
-                        :  m === '"'  ? '&quot;'
-                        :  m === "'"  ? '&#39;'
-                        :  m === '`'  ? '&#96;'
+                    return m === '\t'   ? '&#9;'  // in hex: 09
+                        :  m === '\n'   ? '&#10;' // in hex: 0A
+                        :  m === '\x0B' ? '&#11;' // in hex: 0B  for IE. IE<9 \v equals v, so use \x0B instead
+                        :  m === '\f'   ? '&#12;' // in hex: 0C
+                        :  m === '\r'   ? '&#13;' // in hex: 0D
+                        :  m === ' '    ? '&#32;' // in hex: 20
+                        :  m === '>'    ? '&gt;'
+                        :  m === '"'    ? '&quot;'
+                        :  m === "'"    ? '&#39;'
+                        :  m === '`'    ? '&#96;'
                         : /*empty or all null*/ '\uFFFD';
                 });
         },
@@ -235,7 +235,7 @@ function uriInAttr (s, yav, yu) {
 *
 * @example
 * // output context to be applied by this filter.
-* <textarea>{{{inHTMLData html_data}}}</textarea>
+* <div>{{{inHTMLData htmlData}}}</div>
 *
 */
 exports.inHTMLData = privFilters.yd;
@@ -247,7 +247,7 @@ exports.inHTMLData = privFilters.yd;
 * @returns {string} All NULL characters in s are first replaced with \uFFFD. If s contains -->, --!>, or starts with -*>, insert a space right before > to stop state breaking at <!--{{{yc s}}}-->. If s ends with --!, --, or -, append a space to stop collaborative state breaking at {{{yc s}}}>, {{{yc s}}}!>, {{{yc s}}}-!>, {{{yc s}}}->. If s contains ]> or ends with ], append a space after ] is verified in IE to stop IE conditional comments.
 *
 * @description
-*
+* This filter is to be placed in HTML Comment context
 * <ul>
 * <li><a href="http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment-3">Shazzer - Closing comments for -.-></a>
 * <li><a href="http://shazzer.co.uk/vector/Characters-that-close-a-HTML-comment">Shazzer - Closing comments for --.></a>
@@ -321,8 +321,8 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @description
 * <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>
 * <p class="warning">Warning: If you're working on URI/components, use the more specific uri___InUnQuotedAttr filter </p>
-* <p>Regarding \uFFFD injection,<br/>
-*        Rationale 1: our belief is that developers wouldn't expect an 
+* <p>Regarding \uFFFD injection, given <a id={{{id}}} name="passwd">,<br/>
+*        Rationale 1: our belief is that developers wouldn't expect when id equals an
 *          empty string would result in ' name="passwd"' rendered as 
 *          attribute value, even though this is how HTML5 is specified.<br/>
 *        Rationale 2: an empty or all null string (for IE) can 
