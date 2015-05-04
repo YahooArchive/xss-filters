@@ -274,9 +274,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'x-expression\\28 body\\2e scrollTop\\20 +\\20 50\\20 +\\20 px\\29 ', 
                 'x-url\\28 \\29 \\20 x-url\\28 \\29 ',
             ];
-            testutils.test_yceu(filter.yceu, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "\\27 string\\27 " ]));
-            testutils.test_yced(filter.yced, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "'string'" ]));
-            testutils.test_yces(filter.yces, testPatterns, expectedResults.concat([ '-ide_nt', '"string"', "\\27 string\\27 " ]));
+            testutils.test_yce(filter.yceu, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "\\27 string\\27 " ]));
+            testutils.test_yce(filter.yced, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "'string'" ]));
+            testutils.test_yce(filter.yces, testPatterns, expectedResults.concat([ '-ide_nt', '"string"', "\\27 string\\27 " ]));
         });
     });
 

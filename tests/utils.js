@@ -324,35 +324,14 @@ exports.test_yuc = function (filter) {
     }
 };
 
-var test_yce = function (filter, testPatterns, expectedResults) {
-    if (!expectedResults)
-        throw new Error('must define expected results');
+exports.test_yce = function (filter, testPatterns, expectedResults) {
+    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
+        throw new Error('must define test patterns and expected results');
 
     testPatterns.forEach(function(str, i) {
         var o = filter(str);
         expect(o).to.eql(expectedResults[i]);
     });
-};
-
-exports.test_yceu = function (filter, testPatterns, expectedResults) {
-    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
-        throw new Error('must define test patterns and expected results');
-
-    test_yce(filter, testPatterns, expectedResults);
-};
-
-exports.test_yced = function (filter, testPatterns, expectedResults) {
-    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
-        throw new Error('must define test patterns and expected results');
-
-    test_yce(filter, testPatterns, expectedResults);
-};
-
-exports.test_yces = function (filter, testPatterns, expectedResults) {
-    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
-        throw new Error('must define test patterns and expected results');
-
-    test_yce(filter, testPatterns, expectedResults);
 };
 
 })();

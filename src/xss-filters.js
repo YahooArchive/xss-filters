@@ -218,7 +218,8 @@ exports._getPrivFilters = function () {
                     });
         },
 
-        /* (1) the first rule can be removed as 're' will encode it to '\\26 ', we keep this for the sake of simplicity. (/
+        /* (1) the first rule is to filter out the html encoded string, however this rule can be removed as rule (3) will encode it to '\\26 ',
+           we keep this for the sake of explanation of our filtering rule. NOTE: we have double encoding issue with this rule enable. */
         /* (2) the second rule remove unsupported code point, it is safe to be empty string */
         /* (3) the third rule is CSS escaping */
         /* (4) the forth rule is to blacklist the dangerous function in CSS */
