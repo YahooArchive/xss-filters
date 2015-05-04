@@ -249,7 +249,35 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter yufull state transition test', function() {
             testutils.test_yufull(filter.yufull, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
         });
-
         
     });
+
+    describe("private-xss-filters: yceu, yced and yces tests", function() {
+        it('filter yce[uds] html entitites test', function() {
+            var testPatterns = [ undefined, null,
+                '&',
+                '10%', '+10px', '-10px', '#fff', '\uD7FF', '\uD800', '\uDFFF',
+                '\u0000', ' ', ';}:', '\r\n\t\f\v',
+                encodeURI('http://www.evil.com/?k=v#tag'),
+                'x-url(https://www.evil.com)', 
+                'x-expression(body.scrollTop + 50 + px)', 
+                'x-url() x-url()',
+
+                '-ide_nt', '"string"', "'string'",
+            ];
+            var expectedResults = [ 'undefined', 'null',
+                '\\26 amp\\3b ',
+                '10%', '+10px', '-10px', '#fff', '\\d7ff ', '', '',
+                '\\fffd ', '\\20 ', '\\3b \\7d \\3a ', '\\d \\a \\9 \\c \\b ',
+                'http\\3a \\2f \\2f www\\2e evil\\2e com\\2f \\3f k\\3d v#tag',
+                'x-url\\28 https\\3a \\2f \\2f www\\2e evil\\2e com\\29 ', 
+                'x-expression\\28 body\\2e scrollTop\\20 +\\20 50\\20 +\\20 px\\29 ', 
+                'x-url\\28 \\29 \\20 x-url\\28 \\29 ',
+            ];
+            testutils.test_yceu(filter.yceu, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "\\27 string\\27 " ]));
+            testutils.test_yced(filter.yced, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "'string'" ]));
+            testutils.test_yces(filter.yces, testPatterns, expectedResults.concat([ '-ide_nt', '"string"', "\\27 string\\27 " ]));
+        });
+    });
+
 }());

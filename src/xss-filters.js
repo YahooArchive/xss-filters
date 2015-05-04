@@ -17,9 +17,28 @@ exports._getPrivFilters = function () {
         QUOT   = /"/g,
         SQUOT  = /'/g,
         NULL   = /\x00/g,
+        AMP    = /&/g,
         SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
         SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
+
+    var CSS_DANGEROUS_FUNCTION_NAME = /(url\(|expression\()/g,
+        // The char not in the list will be CSS escaped
+        //
+        // Reference: http://www.w3.org/TR/CSS21/grammar.html
+        // term
+        //   : unary_operator?
+        //     [ NUMBER S* | PERCENTAGE S* | LENGTH S* | EMS S* | EXS S* | ANGLE S* |
+        //     TIME S* | FREQ S* ]
+        //   | STRING S* | IDENT S* | URI S* | hexcolor | function
+        // 
+        // we only allow NUMBER, PERCENTAGE, LENGTH, EMS, EXS, ANGLE, TIME, FREQ, STRING, IDENT and hexcolor now.
+        // URI [:\/@&=], FUNCTION [\(\)] and OPERATOR [\/,] are not allowed.
+        //
+        CSS_NOT_SUPPOTED_CODE_POINT = /([\uD800-\uDFFF])/g,
+        CSS_ESCAPED_UNQUOTED_CHARS = /([^#\-+_%a-zA-Z0-9\uD800-\uDFFF])/g,
+        CSS_ESCAPED_DOUBLE_QUOTED_CHARS = /([^#\-+_'%a-zA-Z0-9\uD800-\uDFFF])/g,
+        CSS_ESCAPED_SINGLE_QUOTED_CHARS = /([^#\-+_"%a-zA-Z0-9\uD800-\uDFFF])/g;
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
@@ -197,6 +216,47 @@ exports._getPrivFilters = function () {
                     .replace(URL_IPV6, function(m, p) {
                         return '//[' + p + ']';
                     });
+        },
+
+        /* (1) the first rule can be removed as 're' will encode it to '\\26 ', we keep this for the sake of simplicity. (/
+        /* (2) the second rule remove unsupported code point, it is safe to be empty string */
+        /* (3) the third rule is CSS escaping */
+        /* (4) the forth rule is to blacklist the dangerous function in CSS */
+        yce: function(s, re) {
+            return typeof s === STR_UD  ? STR_UD
+                 : s === null           ? STR_NL
+                 : s.toString()
+                    .replace(AMP, '&amp;') 
+                    .replace(CSS_NOT_SUPPOTED_CODE_POINT, '') 
+                    .replace(re, function(m) { /* applying the CSS escaping */
+                        var c = m.charCodeAt(0);
+                        switch(c) {
+                            case 0:
+                                return '\\fffd '; /* as defined as specification */
+                            default:
+                                /* the space is needed as defined in the CSS spec */
+                                return '\\'+c.toString(16).toLowerCase()+' '; 
+                        }
+                    });
+        },
+
+        /* this function is not needed at all, as the CSS escaping will encode the [\(\)] */
+        ycebl: function(s) {
+            return s.replace(CSS_DANGEROUS_FUNCTION_NAME, function(m) {
+                return 'x-' + m;
+            });
+        },
+
+        yceu: function(s) {
+            return x.ycebl(x.yce(s, CSS_ESCAPED_UNQUOTED_CHARS));
+        },
+
+        yced: function(s) {
+            return x.ycebl(x.yce(s, CSS_ESCAPED_DOUBLE_QUOTED_CHARS));
+        },
+
+        yces: function(s) {
+            return x.ycebl(x.yce(s, CSS_ESCAPED_SINGLE_QUOTED_CHARS));
         }
     });
 };
