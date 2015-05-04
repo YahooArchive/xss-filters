@@ -273,10 +273,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'x-url\\28 https\\3a \\2f \\2f www\\2e evil\\2e com\\29 ', 
                 'x-expression\\28 body\\2e scrollTop\\20 +\\20 50\\20 +\\20 px\\29 ', 
                 'x-url\\28 \\29 \\20 x-url\\28 \\29 ',
+                '-ide_nt',
             ];
-            testutils.test_yce(filter.yceu, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "\\27 string\\27 " ]));
-            testutils.test_yce(filter.yced, testPatterns, expectedResults.concat([ '-ide_nt', '\\22 string\\22 ', "'string'" ]));
-            testutils.test_yce(filter.yces, testPatterns, expectedResults.concat([ '-ide_nt', '"string"', "\\27 string\\27 " ]));
+            testutils.test_yce(filter.yceu, testPatterns, expectedResults.concat([ '\\22 string\\22 ', "\\27 string\\27 " ]));
+            testutils.test_yce(filter.yced, testPatterns, expectedResults.concat([ '\\22 string\\22 ', "'string'" ]));
+            testutils.test_yce(filter.yces, testPatterns, expectedResults.concat([ '"string"', "\\27 string\\27 " ]));
         });
     });
 
