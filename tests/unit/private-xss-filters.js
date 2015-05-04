@@ -256,7 +256,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter yce[uds] html entitites test', function() {
             var testPatterns = [ undefined, null,
                 '&',
-                '10%', '+10px', '-10px', '#fff', '\uD7FF', '\uD800', '\uDFFF',
+                '10%', '+10px', '-10px', '#fff', '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
                 '\u0000', ' ', ';}:', '\r\n\t\f\v',
                 encodeURI('http://www.evil.com/?k=v#tag'),
                 'x-url(https://www.evil.com)', 
@@ -267,7 +267,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             ];
             var expectedResults = [ 'undefined', 'null',
                 '\\26 amp\\3b ',
-                '10%', '+10px', '-10px', '#fff', '\\d7ff ', '', '',
+                '10%', '+10px', '-10px', '#fff', '\\d7ff ', '', '', '\\1234 567',
                 '\\fffd ', '\\20 ', '\\3b \\7d \\3a ', '\\d \\a \\9 \\c \\b ',
                 'http\\3a \\2f \\2f www\\2e evil\\2e com\\2f \\3f k\\3d v#tag',
                 'x-url\\28 https\\3a \\2f \\2f www\\2e evil\\2e com\\29 ', 

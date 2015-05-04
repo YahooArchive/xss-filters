@@ -227,9 +227,9 @@ exports._getPrivFilters = function () {
             return typeof s === STR_UD  ? STR_UD
                  : s === null           ? STR_NL
                  : s.toString()
-                    .replace(AMP, '&amp;') 
-                    .replace(CSS_NOT_SUPPOTED_CODE_POINT, '') 
-                    .replace(re, function(m) { /* applying the CSS escaping */
+                    .replace(AMP, '&amp;') /* (1) */
+                    .replace(CSS_NOT_SUPPOTED_CODE_POINT, '')  /* (2) */
+                    .replace(re, function(m) { /* (3) */
                         var c = m.charCodeAt(0);
                         switch(c) {
                             case 0:
