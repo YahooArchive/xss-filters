@@ -258,7 +258,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '&',
                 '10%', '+10px', '-10px', '#fff', '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
                 '\u0000', ' ', ';}:', '\r\n\t\f\v',
-                encodeURI('http://www.evil.com/?k=v#tag'),
+                'http://www.evil.com/?k=v#tag',
                 'x-url(https://www.evil.com)', 
                 'x-expression(body.scrollTop + 50 + px)', 
                 'x-url() x-url()',
