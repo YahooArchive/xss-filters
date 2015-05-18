@@ -21,6 +21,15 @@ exports._getPrivFilters = function () {
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
         SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
+    var CSS_NOT_SUPPOTED_CODE_POINT = /([\uD800-\uDFFF])/ig,
+        CSS_ESCAPED_UNQUOTED_CHARS = /([^%#\-+_a-z0-9\.])/ig,
+        CSS_ESCAPED_DOUBLE_QUOTED_CHARS = /([\u0000\n\r\f\v\\"])/ig,
+        CSS_ESCAPED_SINGLE_QUOTED_CHARS = /([\u0000\n\r\f\v\\'])/ig,
+        CSS_ESCAPED_UNQUOTED_URL = /(["'\(\)])/ig,
+        CSS_ESCAPED_DOUBLE_QUOTED_URL = /(["])/ig,
+        CSS_ESCAPED_SINGLE_QUOTED_URL = /(['])/ig;
+        // CSS_DANGEROUS_FUNCTION_NAME = /(url\(|expression\()/ig;
+
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
     var URL_IPV6 = /\/\/%5[Bb]([A-Fa-f0-9:]+)%5[Dd]/;
@@ -197,6 +206,109 @@ exports._getPrivFilters = function () {
                     .replace(URL_IPV6, function(m, p) {
                         return '//[' + p + ']';
                     });
+        },
+
+        //
+        // The design principle of the CSS filter MUST meet the following goal(s).
+        // (1) The input cannot break out of the context (expr) and this is to fulfill the just sufficient encoding principle.
+        // (2) The input cannot introduce CSS parsing error and this is to address the concern of UI redressing.
+        //
+        // term
+        //   : unary_operator?
+        //     [ NUMBER S* | PERCENTAGE S* | LENGTH S* | EMS S* | EXS S* | ANGLE S* |
+        //     TIME S* | FREQ S* ]
+        //   | STRING S* | IDENT S* | URI S* | hexcolor | function
+        // 
+        // Reference:
+        // * http://www.w3.org/TR/CSS21/grammar.html 
+        // * http://www.w3.org/TR/css-syntax-3/
+        // 
+        // PART 1. The first rule is to filter out the html encoded string, however this rule can be removed as rule (3) IF '&' is being encoded.
+        // PART 2. The second rule remove unsupported code point [\uD800-\uDFFF], it is safe to be empty string.
+        // PART 3. The third rule is CSS escaping and depends on 
+        // 
+        //         CSS_ESCAPED_UNQUOTED_CHARS = /([^%#\-+_a-z0-9\.])/ig,
+        //         we allow NUMBER, PERCENTAGE, LENGTH, EMS, EXS, ANGLE, TIME, FREQ, IDENT and hexcolor in UNQUOTED filter without escaping chars [%#\-+_a-z0-9\.].
+        //
+        //         string1 = \"([^\n\r\f\\"]|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\"
+        //         CSS_ESCAPED_DOUBLE_QUOTED_CHARS = /([\u0000\n\r\f\v\\"])/ig,
+        //         we allow STRING in QUOTED filter and only escape [\u0000\n\r\f\v\\"] only. (\v is added for IE)
+        // 
+        //         string2 = \'([^\n\r\f\\']|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\'
+        //         CSS_ESCAPED_SINGLE_QUOTED_CHARS = /([\u0000\n\r\f\v\\'])/ig,
+        //         we allow STRING in QUOTED filter and only escape [\u0000\n\r\f\v\\'] only. (\v is added for IE)
+        //
+        //         unquoted_url = ([!#$%&*-~]|\\{h}{1,6}(\r\n|[ \t\r\n\f])?|\\[^\r\n\f0-9a-f])* (CSS 2.1 definition)
+        //         unquoted_url = ([^"'()\\ \t\n\r\f\v\u0000\u0008\u000b\u000e-\u001f\u007f]|\\{h}{1,6}(\r\n|[ \t\r\n\f])?|\\[^\r\n\f0-9a-f])* (CSS 3.0 definition)
+        //         The state machine in CSS 3.0 is more well defined - http://www.w3.org/TR/css-syntax-3/#consume-a-url-token0
+        //         // CSS_ESCAPED_UNQUOTED_URL = /(["'\(\)\\ \t\n\r\f\v\u0000\u0008\u000b\u007f\u000e-\u001f])/ig; (\v is added for IE)
+        //         CSS_ESCAPED_UNQUOTED_URL = /(["'\(\)])/ig; (optimized version by chaining with yufull)
+        //
+        //         as per the CSS spec, it is defined as the STRING to handle
+        //         // CSS_ESCAPED_DOUBLE_QUOTED_URL = CSS_ESCAPED_DOUBLE_QUOTED_CHARS;
+        //         CSS_ESCAPED_DOUBLE_QUOTED_URL = /(["])/ig; (optimized version by chaining with yufull)
+        //         // CSS_ESCAPED_SINGLE_QUOTED_URL = CSS_ESCAPED_SINGLE_QUOTED_CHARS;
+        //         CSS_ESCAPED_SINGLE_QUOTED_URL = /(['])/ig; (optimized version by chaining with yufull)
+        //
+        // NOTE: delimitar in CSS - \ _ : ; ( ) " ' / , % # ! * @ . { }
+        //
+        // PART 4. The forth rule is to blacklist the dangerous function in CSS, however this rule can be removed as rule (3) will encode '()' to '\\3b \\28 ' in UNQUOTED filter,
+        // while there is no need to encode it in STRING filter.
+        //
+        yce: function(s, re) {
+            return typeof s === STR_UD  ? STR_UD
+                 : s === null           ? STR_NL
+                 : s.toString()
+                    //.replace(AMP, '&amp;') /* (1) - disable */
+                    .replace(CSS_NOT_SUPPOTED_CODE_POINT, '')  /* (2) */
+                    .replace(re, function(m) { /* (3) */
+                        var c = m.charCodeAt(0);
+                        switch(c) {
+                            case 0:
+                                return '\\fffd '; /* as defined as specification */
+                            default:
+                                /* the space is needed as defined in the CSS spec */
+                                return '\\'+c.toString(16).toLowerCase()+' '; 
+                        }
+                    });
+                    //.replace(CSS_DANGEROUS_FUNCTION_NAME, function(m) { /* (4) - disable */
+                        //return 'x-' + m;
+                    //});
+        },
+
+        yceu: function(s) {
+            return x.yce(s, CSS_ESCAPED_UNQUOTED_CHARS);
+        },
+
+        yced: function(s) {
+            return x.yce(s, CSS_ESCAPED_DOUBLE_QUOTED_CHARS);
+        },
+
+        yces: function(s) {
+            return x.yce(s, CSS_ESCAPED_SINGLE_QUOTED_CHARS);
+        },
+
+        // NOTE: This filter is not safe yet, we need the full html decoder to make it safe.
+        yceuu: function(s) {
+            return x.yce(x.yufull(s)
+                          .replace(/&rpar;|&#[xX]0*29;?|&#0*41;?/g, ')')
+                          .replace(/&lpar;|&#[xX]0*28;?|&#0*40;?/g, '(')
+                          .replace(/&apos;|&#[xX]0*27;?|&#0*39;?/g, '\'')
+                          .replace(/&quot;|&QUOT;|&#[xX]0*22;?|&#0*34;?/g, '"'),
+                     CSS_ESCAPED_UNQUOTED_URL);
+        },
+
+        // NOTE: The decode order of html and yufull does not matter in yceud / yceus.
+        yceud: function(s) {
+            return x.yce(x.yufull(s)
+                          .replace(/&quot;|&QUOT;|&#[xX]0*22;?|&#0*34;?/g, '"'),
+                    CSS_ESCAPED_DOUBLE_QUOTED_URL);
+        },
+
+        yceus: function(s) {
+            return x.yce(x.yufull(s)
+                          .replace(/&apos;|&#[xX]0*27;?|&#0*39;?/g, '\''),
+                    CSS_ESCAPED_SINGLE_QUOTED_URL);
         }
     });
 };

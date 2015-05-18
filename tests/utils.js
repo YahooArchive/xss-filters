@@ -324,4 +324,14 @@ exports.test_yuc = function (filter) {
     }
 };
 
+exports.test_yce = function (filter, testPatterns, expectedResults) {
+    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
+        throw new Error('must define test patterns and expected results');
+
+    testPatterns.forEach(function(str, i) {
+        var o = filter(str);
+        expect(o).to.eql(expectedResults[i]);
+    });
+};
+
 })();
