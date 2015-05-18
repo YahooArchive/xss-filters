@@ -252,32 +252,108 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         
     });
 
-    describe("private-xss-filters: yceu, yced and yces tests", function() {
-        it('filter yce[uds] html entitites test', function() {
+    describe("private-xss-filters: css tests", function() {
+
+        it('filter yce[uds] test', function() {
             var testPatterns = [ undefined, null,
                 '&',
-                '10%', '+10px', '-10px', '#fff', '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
-                '\u0000', ' ', ';}:', '\r\n\t\f\v',
-                'http://www.evil.com/?k=v#tag',
-                'x-url(https://www.evil.com)', 
-                'x-expression(body.scrollTop + 50 + px)', 
-                'x-url() x-url()',
-
+                '1.1', '10%', '+10px', '-10px', '#fff', 
+                '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
+                '\u0000', ' ', '\r\n\t\f\v', '\\', '\\n\\r\\f\\0\\9\\a\\f',
                 '-ide_nt', '"string"', "'string'",
+                '- \ _ : ; ( ) " \' / , % # ! * @ . { }', 
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                'url(https://www.evil.com)', 
+                'expression(body.scrollTop + 50 + px)', 
             ];
+
             var expectedResults = [ 'undefined', 'null',
-                '\\26 amp\\3b ',
-                '10%', '+10px', '-10px', '#fff', '\\d7ff ', '', '', '\\1234 567',
-                '\\fffd ', '\\20 ', '\\3b \\7d \\3a ', '\\d \\a \\9 \\c \\b ',
-                'http\\3a \\2f \\2f www\\2e evil\\2e com\\2f \\3f k\\3d v#tag',
-                'x-url\\28 https\\3a \\2f \\2f www\\2e evil\\2e com\\29 ', 
-                'x-expression\\28 body\\2e scrollTop\\20 +\\20 50\\20 +\\20 px\\29 ', 
-                'x-url\\28 \\29 \\20 x-url\\28 \\29 ',
-                '-ide_nt',
+                '\\26 ',
+                '1.1', '10%', '+10px', '-10px', '#fff', '\\d7ff ', 
+                '', '', '\\1234 567',
+                '\\fffd ', '\\20 ', '\\d \\a \\9 \\c \\b ', '\\5c ', '\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f',
+                '-ide_nt', '\\22 string\\22 ', "\\27 string\\27 ",
+                '-\\20 \\20 _\\20 \\3a \\20 \\3b \\20 \\28 \\20 \\29 \\20 \\22 \\20 \\27 \\20 \\2f \\20 \\2c \\20 %\\20 #\\20 \\21 \\20 \\2a \\20 \\40 \\20 .\\20 \\7b \\20 \\7d ', 
+                'http\\3a \\2f \\2f username\\3a password\\40 www.evil.com\\3a 8080\\2f \\3f k1\\3d v1\\26 k2\\3d v2#hash',
+                'url\\28 https\\3a \\2f \\2f www.evil.com\\29 ',
+                'expression\\28 body.scrollTop\\20 +\\20 50\\20 +\\20 px\\29 ',
             ];
-            testutils.test_yce(filter.yceu, testPatterns, expectedResults.concat([ '\\22 string\\22 ', "\\27 string\\27 " ]));
-            testutils.test_yce(filter.yced, testPatterns, expectedResults.concat([ '\\22 string\\22 ', "'string'" ]));
-            testutils.test_yce(filter.yces, testPatterns, expectedResults.concat([ '"string"', "\\27 string\\27 " ]));
+            testutils.test_yce(filter.yceu, testPatterns, expectedResults);
+            var expectedResults = [ 'undefined', 'null',
+                '&', 
+                '1.1', '10%', '+10px', '-10px', '#fff', 
+                '\uD7FF', '', '', '\u1234567',
+                '\\fffd ', ' ', '\\d \\a \t\\c \\b ', '\\5c ', '\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f',
+                '-ide_nt', '\\22 string\\22 ', "'string'",
+                '-  _ : ; ( ) \\22  \' / , % # ! * @ . { }',
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                'url(https://www.evil.com)',
+                'expression(body.scrollTop + 50 + px)',
+            ];
+            testutils.test_yce(filter.yced, testPatterns, expectedResults);
+            var expectedResults = [ 'undefined', 'null',
+                '&', 
+                '1.1', '10%', '+10px', '-10px', '#fff', 
+                '\uD7FF', '', '', '\u1234567',
+                '\\fffd ', ' ', '\\d \\a \t\\c \\b ', '\\5c ', '\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f',
+                '-ide_nt', '"string"', "\\27 string\\27 ",
+                '-  _ : ; ( ) " \\27  / , % # ! * @ . { }',
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                'url(https://www.evil.com)',
+                'expression(body.scrollTop + 50 + px)',
+            ];
+            testutils.test_yce(filter.yces, testPatterns, expectedResults);
+        });
+
+        it('filter yceu[uds] attribute test', function() {
+            var testPatterns = [ undefined, null,
+                '&',
+                '1.1', '10%', '+10px', '-10px', '#fff', 
+                '\\a', '\uD7FF', '\u1234567',
+                '\u0000', ' ', '\r\n\t\f\v', '\\', '\\n\\r\\f\\0\\9\\a\\f',
+                '-ide_nt', '"string"', "'string'",
+                '- \ _ : ; ( ) " \' / , % # ! * @ . { } [ ]', 
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                '\u0000\u0008\u000b\u007f\u000e-\u001f',
+                '&rpar;&#x00029;&#41;&lpar;&#x00028;&#40;&apos;&#x00027;&#39;&quot;&QUOT;&#x00022;&#34',
+            ];
+
+            var expectedResults = [ 'undefined', 'null',
+                '&', 
+                '1.1', '10%25', '+10px', '-10px', '#fff', 
+                '%5Ca', '%ED%9F%BF', '%E1%88%B4567',
+                '%00', '%20', '%0D%0A%09%0C%0B', '%5C', '%5Cn%5Cr%5Cf%5C0%5C9%5Ca%5Cf',
+                '-ide_nt', '%22string%22', "\\27 string\\27 ",
+                '-%20%20_%20:%20;%20\\28 %20\\29 %20%22%20\\27 %20/%20,%20%25%20#%20!%20*%20@%20.%20%7B%20%7D%20%5B%20%5D',
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                '%00%08%0B%7F%0E-%1F',
+                '\\29 \\29 \\29 \\28 \\28 \\28 \\27 \\27 \\27 \\22 \\22 \\22 \\22 ',
+            ];
+            testutils.test_yce(filter.yceuu, testPatterns, expectedResults);
+            var expectedResults = [ 'undefined', 'null',
+                '&', 
+                '1.1', '10%25', '+10px', '-10px', '#fff', 
+                '%5Ca', '%ED%9F%BF', '%E1%88%B4567',
+                '%00', '%20', '%0D%0A%09%0C%0B', '%5C', '%5Cn%5Cr%5Cf%5C0%5C9%5Ca%5Cf',
+                '-ide_nt', '%22string%22', "'string'",
+                '-%20%20_%20:%20;%20(%20)%20%22%20\'%20/%20,%20%25%20#%20!%20*%20@%20.%20%7B%20%7D%20%5B%20%5D',
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                '%00%08%0B%7F%0E-%1F',
+                '&rpar;&#x00029;&#41;&lpar;&#x00028;&#40;&apos;&#x00027;&#39;\\22 \\22 \\22 \\22 ',
+            ];
+            testutils.test_yce(filter.yceud, testPatterns, expectedResults);
+            var expectedResults = [ 'undefined', 'null',
+                '&', 
+                '1.1', '10%25', '+10px', '-10px', '#fff', 
+                '%5Ca', '%ED%9F%BF', '%E1%88%B4567',
+                '%00', '%20', '%0D%0A%09%0C%0B', '%5C', '%5Cn%5Cr%5Cf%5C0%5C9%5Ca%5Cf',
+                '-ide_nt', '%22string%22', "\\27 string\\27 ",
+                '-%20%20_%20:%20;%20(%20)%20%22%20\\27 %20/%20,%20%25%20#%20!%20*%20@%20.%20%7B%20%7D%20%5B%20%5D',
+                'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
+                '%00%08%0B%7F%0E-%1F',
+                '&rpar;&#x00029;&#41;&lpar;&#x00028;&#40;\\27 \\27 \\27 &quot;&QUOT;&#x00022;&#34',
+            ];
+            testutils.test_yce(filter.yceus, testPatterns, expectedResults);
         });
     });
 
