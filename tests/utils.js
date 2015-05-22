@@ -168,7 +168,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'x-javascript:javascript:alert(0)',
 
         'x-vbscript&colon;',
-        'x-&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
+        '&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
 
         'https://www.yahoo.com',
         'http://www.yahoo.com',
