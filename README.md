@@ -2,6 +2,14 @@ Secure XSS Filters
 =================
 *Just sufficient* output filtering to prevent XSS!
 
+[![npm version][npm-badge]][npm]
+[![dependency status][dep-badge]][dep-status]
+
+[npm]: https://www.npmjs.org/package/xss-filters
+[npm-badge]: https://img.shields.io/npm/v/xss-filters.svg?style=flat-square
+[dep-status]: https://david-dm.org/yahoo/xss-filters
+[dep-badge]: https://img.shields.io/david/yahoo/xss-filters.svg?style=flat-square
+
 ## Goals
 
 - **More Secure.** Context-dependent output filters that are developer-friendly. It is safe to apply these filters like so: 
