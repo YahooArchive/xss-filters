@@ -25,14 +25,13 @@ exports._getPrivFilters = function () {
     var SENSITIVE_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|(Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(quot|QUOT);?)/g,
         SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', comma: ',', excl: '!', ast: '*', midast: '*', quot: '"', QUOT: '"'};
 
+    // TODO: CSS_DANGEROUS_FUNCTION_NAME = /(url\(|expression\()/ig;
     var CSS_UNQUOTED_CHARS = /[^%#+\-\w\.]/g,
-        CSS_DOUBLE_QUOTED_CHARS = /[\x09-\x0D\\"]/g,
-        CSS_SINGLE_QUOTED_CHARS = /[\x09-\x0D\\']/g,
-        CSS_UNQUOTED_URL = /['\(\)]/g;                 // " is already escaped as %22
-//  var CSS_UNSUPPORTED_CODE_POINT = /[\uD800-\uDFFF]/g,
-//      CSS_DOUBLE_QUOTED_URL = QUOT,
-//      CSS_SINGLE_QUOTED_URL = SQUOT;
-//      CSS_DANGEROUS_FUNCTION_NAME = /(url\(|expression\()/ig;
+        // \x7F and \x01-\x1F less \x09 are for Safari 5.0
+        CSS_DOUBLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\"]/g,
+        CSS_SINGLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\']/g,
+        // this assumes encodeURI() and encodeURIComponent() has escaped 1-32, 41, 127 for IE8
+        CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()   
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
