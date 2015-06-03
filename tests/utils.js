@@ -168,7 +168,7 @@ exports.test_yubl = function (filter, expectedResults) {
         'x-javascript:javascript:alert(0)',
 
         'x-vbscript&colon;',
-        'x-&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
+        '&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
 
         'https://www.yahoo.com',
         'http://www.yahoo.com',
@@ -322,6 +322,16 @@ exports.test_yuc = function (filter) {
     } catch (err) {
         expect(err.message).to.eql('URI malformed');
     }
+};
+
+exports.test_yce = function (filter, testPatterns, expectedResults) {
+    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
+        throw new Error('must define test patterns and expected results');
+
+    testPatterns.forEach(function(str, i) {
+        var o = filter(str);
+        expect(o).to.eql(expectedResults[i]);
+    });
 };
 
 })();
