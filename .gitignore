@@ -3,4 +3,3 @@ artifacts/
 dist/docs/
 npm-debug.log
 .*.swp
-dist
