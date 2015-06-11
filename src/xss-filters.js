@@ -332,8 +332,6 @@ exports._getPrivFilters = function () {
                     });
         },
 
-
-
         // The design principle of the CSS filter MUST meet the following goal(s).
         // (1) The input cannot break out of the context (expr) and this is to fulfill the just sufficient encoding principle.
         // (2) The input cannot introduce CSS parsing error and this is to address the concern of UI redressing.
@@ -348,56 +346,41 @@ exports._getPrivFilters = function () {
         // * http://www.w3.org/TR/CSS21/grammar.html 
         // * http://www.w3.org/TR/css-syntax-3/
         // 
-        // PART 1. The first rule is to filter out the html encoded string, however this rule can be removed as rule (3) IF '&' is being encoded.
-        // PART 2. The second rule remove unsupported code point [\uD800-\uDFFF], it is safe to be empty string.
-        // PART 3. The third rule is CSS escaping and depends on 
-        // 
         // NOTE: delimitar in CSS - \ _ : ; ( ) " ' / , % # ! * @ . { }
-        //
-        // PART 4. The forth rule is to blacklist the dangerous function in CSS, however this rule can be removed as rule (3) will encode '()' to '\\3b \\28 ' in UNQUOTED filter,
-        // while there is no need to encode it in STRING filter.
 
-
-        // CSS_UNQUOTED_CHARS = /([^%#\-+_a-z0-9\.])/ig,
-        // we allow NUMBER, PERCENTAGE, LENGTH, EMS, EXS, ANGLE, TIME, FREQ, IDENT and hexcolor in UNQUOTED filter without escaping chars [%#\-+_a-z0-9\.].
+        // CSS_UNQUOTED_CHARS = /[^%#+\-\w\.]/g,
         yceu: function(s) {
             return css(s, CSS_UNQUOTED_CHARS);
         },
 
         // string1 = \"([^\n\r\f\\"]|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\"
-        // CSS_DOUBLE_QUOTED_CHARS = /([\u0000\n\r\f\v\\"])/ig,
-        // we allow STRING in QUOTED filter and only escape [\u0000\n\r\f\v\\"] only. (\v is added for IE)
+        // CSS_DOUBLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\"]/g,
         yced: function(s) {
             return css(s, CSS_DOUBLE_QUOTED_CHARS);
         },
 
         // string2 = \'([^\n\r\f\\']|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\'
-        // CSS_SINGLE_QUOTED_CHARS = /([\u0000\n\r\f\v\\'])/ig,
-        // we allow STRING in QUOTED filter and only escape [\u0000\n\r\f\v\\'] only. (\v is added for IE)
+        // CSS_SINGLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\']/g,
         yces: function(s) {
             return css(s, CSS_SINGLE_QUOTED_CHARS);
         },
-
 
         // for url({{{yceuu url}}}
         // unquoted_url = ([!#$%&*-~]|\\{h}{1,6}(\r\n|[ \t\r\n\f])?|\\[^\r\n\f0-9a-f])* (CSS 2.1 definition)
         // unquoted_url = ([^"'()\\ \t\n\r\f\v\u0000\u0008\u000b\u000e-\u001f\u007f]|\\{h}{1,6}(\r\n|[ \t\r\n\f])?|\\[^\r\n\f0-9a-f])* (CSS 3.0 definition)
         // The state machine in CSS 3.0 is more well defined - http://www.w3.org/TR/css-syntax-3/#consume-a-url-token0
-        // CSS_UNQUOTED_URL = /(["'\(\)\\ \t\n\r\f\v\u0000\u0008\u000b\u007f\u000e-\u001f])/ig; (\v is added for IE)
-        // CSS_UNQUOTED_URL = /(["'\(\)])/ig; (optimized version by chaining with yufull)
+        // CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()   
         yceuu: function(s) {
             return cssUrl(s, CSS_UNQUOTED_URL);
         },
 
         // for url("{{{yceud url}}}
-        // CSS_DOUBLE_QUOTED_URL = CSS_DOUBLE_QUOTED_CHARS;
         // CSS_DOUBLE_QUOTED_URL has nothing else to escape (optimized version by chaining with yufull)
         yceud: function(s) { 
             return cssUrl(s);
         },
 
         // for url('{{{yceus url}}}
-        // CSS_SINGLE_QUOTED_URL = CSS_SINGLE_QUOTED_CHARS;
         // CSS_SINGLE_QUOTED_URL = /'/g; (optimized version by chaining with yufull)
         yceus: function(s) { 
             return cssUrl(s, SQUOT);
