@@ -335,6 +335,11 @@ exports._getPrivFilters = function () {
                     });
         },
 
+        // chain yufull() with yubl()
+        yublf: function (s) {
+            return x.yubl(x.yufull(s));
+        },
+
         // The design principle of the CSS filter MUST meet the following goal(s).
         // (1) The input cannot break out of the context (expr) and this is to fulfill the just sufficient encoding principle.
         // (2) The input cannot introduce CSS parsing error and this is to address the concern of UI redressing.

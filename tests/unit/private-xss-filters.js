@@ -50,6 +50,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter yufull exists', function() {
             expect(filter.yufull).to.be.ok();
         });
+        it('filter yublf exists', function() {
+            expect(filter.yublf).to.be.ok();
+        });
+        
     });
 
     describe("private-xss-filters: alias tests", function() {
@@ -112,6 +116,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yuc()).to.eql('undefined');
             // yubl will not be independently used
             // expect(filter.yubl()).to.eql('undefined');
+
+            expect(filter.yublf()).to.eql('undefined');
         });
 
         it('filters handling of null input', function() {
@@ -128,6 +134,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yuc(null)).to.eql('null');
             // yubl will not be independently used
             // expect(filter.yubl()).to.eql('undefined');
+
+            expect(filter.yublf(null)).to.eql('null');
         });
 
 
@@ -147,6 +155,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yuc(array)).to.eql('a%2Cb');
             // yubl will not be independently used
             // expect(filter.yubl()).to.eql('undefined');
+
+            expect(filter.yublf(array)).to.eql(result);
         });
 
 
@@ -166,6 +176,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yuc(object)).to.eql('%5Bobject%20Object%5D');
             // yubl will not be independently used
             // expect(filter.yubl()).to.eql('undefined');
+
+            expect(filter.yublf(object)).to.eql('%5Bobject%20Object%5D');
         });
 
         it('filters handling of empty string', function() {
@@ -183,6 +195,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.yu(str)).to.eql(result);
             expect(filter.yuc(str)).to.eql(result);
             expect(filter.yubl(str)).to.eql(result);
+            expect(filter.yublf(str)).to.eql(result);
         });
     });
 
@@ -262,6 +275,13 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filter yufull state transition test', function() {
             testutils.test_yufull(filter.yufull, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+        });
+
+        it('filter yublf state transition test', function() {
+            testutils.test_yufull(filter.yublf, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yubl(filter.yublf, [
+                '%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E%1F%20j%0Aav&#x61;%0Dscript%09&col%00on;'
+            ]);
         });
         
     });
