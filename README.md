@@ -4,6 +4,7 @@ Secure XSS Filters
 
 [![npm version][npm-badge]][npm]
 [![dependency status][dep-badge]][dep-status]
+[![Build Status](https://travis-ci.org/yahoo/xss-filters.svg?branch=master)](https://travis-ci.org/yahoo/xss-filters)
 
 [npm]: https://www.npmjs.org/package/xss-filters
 [npm-badge]: https://img.shields.io/npm/v/xss-filters.svg?style=flat-square
@@ -115,9 +116,6 @@ npm run-script build  # build the minified version for client-side use
 npm run-script docs   # build the docs
 ```
 
-Build
------
-[![Build Status](https://travis-ci.org/yahoo/xss-filters.svg?branch=master)](https://travis-ci.org/yahoo/xss-filters)
 
 License
 -------
