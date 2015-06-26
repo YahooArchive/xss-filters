@@ -20,6 +20,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter y exists', function() {
             expect(filter.y).to.be.ok();
         });
+        it('filter ya exists', function() {
+            expect(filter.ya).to.be.ok();
+        });
         it('filter yd exists', function() {
             expect(filter.yd).to.be.ok();
         });
@@ -97,6 +100,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filters handling of undefined input', function() {
             expect(filter.y()).to.eql('undefined');
+            expect(filter.ya()).to.eql('undefined');
             expect(filter.yd()).to.eql('undefined');
             expect(filter.yc()).to.eql('undefined');
 
@@ -112,6 +116,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filters handling of null input', function() {
             expect(filter.y(null)).to.eql('null');
+            expect(filter.ya(null)).to.eql('null');
             expect(filter.yd(null)).to.eql('null');
             expect(filter.yc(null)).to.eql('null');
 
@@ -130,6 +135,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var array = ['a', 'b'], result = 'a,b';
 
             expect(filter.y(array)).to.eql(result);
+            expect(filter.ya(array)).to.eql(result);
             expect(filter.yd(array)).to.eql(result);
             expect(filter.yc(array)).to.eql(result);
 
@@ -148,6 +154,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var object = {'a':1, 'b':0}, result = '[object Object]';
 
             expect(filter.y(object)).to.eql(result);
+            expect(filter.ya(object)).to.eql(result);
             expect(filter.yd(object)).to.eql(result);
             expect(filter.yc(object)).to.eql(result + ' ');
 
@@ -165,6 +172,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var str = '', result = '';
 
             expect(filter.y(str)).to.eql(result);
+            expect(filter.ya(str)).to.eql(result);
             expect(filter.yd(str)).to.eql(result);
             expect(filter.yc(str)).to.eql(result);
 
@@ -184,6 +192,12 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var s = "foo&<>\"'` bar&<>\"' &lt;";
             var o = filter.y(s);
             expect(o).to.eql('foo&amp;&lt;&gt;&quot;&#39;&#96; bar&amp;&lt;&gt;&quot;&#39; &amp;lt;');
+        });
+
+        it('filter ya state transition test', function() {
+            var s = "foo&<>\"'` bar&<>\"' &lt; &quot; &#39;";
+            var o = filter.ya(s);
+            expect(o).to.eql('foo&amp;<>"\'` bar&amp;<>"\' &amp;lt; &amp;quot; &amp;#39;');
         });
 
         it('filter yd state transition test', function() {
@@ -322,6 +336,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
             '\u0000\u0008\u000b\u007f\u000e-\u001f',
             '&rpar;&#x00029;&#41;&lpar;&#x00028;&#40;&apos;&#x00027;&#39;&quot;&QUOT;&#x00022;&#34',
+            'javascript:alert(1)'
         ];
 
         it('filter yceuu[uds] attribute test', function() {
@@ -335,6 +350,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
                 '%EF%BF%BD%08%0B%7F%0E-%1F',
                 '\\29 \\29 \\29 \\28 \\28 \\28 \\27 \\27 \\27 %22%22%22%22',
+                '##javascript:alert\\28 1\\29 '
             ];
             testutils.test_yce(filter.yceuu, testPatterns, expectedResults);
         });
@@ -349,6 +365,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
                 '%EF%BF%BD%08%0B%7F%0E-%1F',
                 ')))(((\'\'\'%22%22%22%22',
+                '##javascript:alert(1)'
             ];
             testutils.test_yce(filter.yceud, testPatterns, expectedResults);
         });
@@ -363,8 +380,32 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
                 '%EF%BF%BD%08%0B%7F%0E-%1F',
                 ')))(((\\27 \\27 \\27 %22%22%22%22',
+                '##javascript:alert(1)'
             ];
             testutils.test_yce(filter.yceus, testPatterns, expectedResults);
+        });
+    });
+
+    describe("private-xss-filters: utility tests", function() {
+        it('htmlDecode d exists', function() {
+            expect(filter.d).to.be.ok();
+        });
+        it('htmlDecode d test', function() {
+            expect(filter.d(null)).to.equal('null');
+            expect(filter.d()).to.equal('undefined');
+            expect(filter.d('&Aacute;&#0;&#x0D;&#x80;&#x82;&#x94;&#x9F;&#xD800;&#xFDD0;')).to.equal('&Aacute;\uFFFD\uFFFD\u20AC\u201A\u201D\u0178\uFFFD\uFFFD');
+        });
+
+        it('frCoPt exists', function() {
+            expect(filter.frCoPt).to.be.ok();
+        });
+        it('frCoPt test', function() {
+            expect(filter.frCoPt(null)).to.equal('');
+            expect(filter.frCoPt()).to.equal('');
+            expect(filter.frCoPt(0)).to.equal('\uFFFD');
+            expect(filter.frCoPt(10)).to.equal('\n');
+            expect(filter.frCoPt(0x0B)).to.equal('\uFFFD');
+            expect(filter.frCoPt(0x10FFFF)).to.equal('\uFFFD');
         });
     });
 
