@@ -14,6 +14,7 @@ exports._getPrivFilters = function () {
     var LT     = /</g,
         QUOT   = /"/g,
         SQUOT  = /'/g,
+        AMP    = /&/g,
         NULL   = /\x00/g,
         SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
@@ -179,8 +180,9 @@ exports._getPrivFilters = function () {
     return (x = {
         // turn invalid codePoints and that of non-characters to \uFFFD, and then fromCodePoint()
         frCoPt: function(num) {
-            return !isFinite(num) ||            // `NaN`, `+Infinity`, or `-Infinity`
-                num <= 0 ||                     // NULL or not a valid Unicode code point
+            return num === undefined || num === null ? '' :
+                !isFinite(num = Number(num)) || // `NaN`, `+Infinity`, or `-Infinity`
+                num <= 0 ||                     // not a valid Unicode code point
                 num > 0x10FFFF ||               // not a valid Unicode code point
                 // Math.floor(num) != num || 
 
@@ -207,14 +209,10 @@ exports._getPrivFilters = function () {
         },
 
         /*
+         * @deprecated
          * @param {string} s - An untrusted user input
          * @returns {string} s - The original user input with & < > " ' ` encoded respectively as &amp; &lt; &gt; &quot; &#39; and &#96;.
          *
-         * @description
-         * <p>This filter is a fallback to use the standard HTML escaping (i.e., encoding &<>"'`)
-         * in contexts that are currently not handled by the automatic context-sensitive templating solution.</p>
-         *
-         * See workaround at https://github.com/yahoo/xss-filters#warnings
          */
         y: function(s) {
             return stringify(s, strReplace, SPECIAL_HTML_CHARS, function (m) {
@@ -225,6 +223,11 @@ exports._getPrivFilters = function () {
                     :  m === "'" ? '&#39;'
                     :  /*m === '`'*/ '&#96;';       // in hex: 60
             });
+        },
+
+        // This filter is meant to introduce double-encoding, and should be used with extra care.
+        ya: function(s) {
+            return stringify(s, strReplace, AMP, '&amp;');
         },
 
         // FOR DETAILS, refer to inHTMLData()
@@ -330,6 +333,11 @@ exports._getPrivFilters = function () {
                     .replace(URL_IPV6, function(m, p) {
                         return '//[' + p + ']';
                     });
+        },
+
+        // chain yufull() with yubl()
+        yublf: function (s) {
+            return x.yubl(x.yufull(s));
         },
 
         // The design principle of the CSS filter MUST meet the following goal(s).
