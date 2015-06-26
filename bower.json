@@ -1,6 +1,6 @@
 {
   "name": "xss-filters",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "homepage": "https://github.com/yahoo/xss-filters",
   "authors": [
     "Nera Liu <neraliu@yahoo-inc.com>",
