@@ -79,7 +79,7 @@ exports._getPrivFilters = function () {
     }
 
 
-    function htmlDecode(s, namedRefMap, reNamedRef, callback) {
+    function htmlDecode(s, namedRefMap, reNamedRef, callback, skipReplacement) {
         namedRefMap = namedRefMap || SENSITIVE_NAMED_REF_MAP;
         reNamedRef = reNamedRef || SENSITIVE_HTML_ENTITIES;
 
@@ -121,7 +121,8 @@ exports._getPrivFilters = function () {
                     // // num >= 0xD800 && num <= 0xDFFF, and 0x0D is separately handled, as it doesn't fall into the range of x.pec()
                     // return (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD' : x.frCoPt(num);
 
-                    return num === 0x80 ? '\u20AC'  // EURO SIGN (€)
+                    return skipReplacement ? fromCodePoint(num)
+                            : num === 0x80 ? '\u20AC'  // EURO SIGN (€)
                             : num === 0x82 ? '\u201A'  // SINGLE LOW-9 QUOTATION MARK (‚)
                             : num === 0x83 ? '\u0192'  // LATIN SMALL LETTER F WITH HOOK (ƒ)
                             : num === 0x84 ? '\u201E'  // DOUBLE LOW-9 QUOTATION MARK („)
@@ -205,7 +206,7 @@ exports._getPrivFilters = function () {
             // URI_PROTOCOL_WHITESPACES is required for left trim and remove interim whitespaces
             return s ? htmlDecode(s, URI_PROTOCOL_NAMED_REF_MAP, null, function() {
                 return this.replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
-            }): null;
+            }, true): null;
         },
 
         /*
