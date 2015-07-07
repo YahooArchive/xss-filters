@@ -16,7 +16,7 @@ exports._getPrivFilters = function () {
         SQUOT  = /'/g,
         AMP    = /&/g,
         NULL   = /\x00/g,
-        SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
+        SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^$|[\x00\x09-\x0D "'`=<>])/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
         SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
@@ -310,11 +310,13 @@ exports._getPrivFilters = function () {
                     :  m === '\f'   ? '&#12;' // in hex: 0C
                     :  m === '\r'   ? '&#13;' // in hex: 0D
                     :  m === ' '    ? '&#32;' // in hex: 20
+                    :  m === '='    ? '&#61;' // in hex: 3D
+                    :  m === '<'    ? '&lt;'
                     :  m === '>'    ? '&gt;'
                     :  m === '"'    ? '&quot;'
                     :  m === "'"    ? '&#39;'
                     :  m === '`'    ? '&#96;'
-                    : /*empty or all null*/ '\uFFFD';
+                    : /*empty or null*/ '\uFFFD';
             });
         },
 
@@ -512,7 +514,7 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @function module:xss-filters#inUnQuotedAttr
 *
 * @param {string} s - An untrusted user input
-* @returns {string} If s contains any state breaking chars (\t, \n, \v, \f, \r, space, and >), they are escaped and encoded into their equivalent HTML entity representations. If s starts with ', " or `, they are escaped to enforce the attr value (unquoted) state. If the whole string is empty or all null, inject a \uFFFD character.
+* @returns {string} If s contains any state breaking chars (\t, \n, \v, \f, \r, space, null, ', ", `, <, >, and =), they are escaped and encoded into their equivalent HTML entity representations. If the string is empty, inject a \uFFFD character.
 *
 * @description
 * <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>

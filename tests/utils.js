@@ -194,39 +194,41 @@ exports.test_yubl = function (filter, expectedResults) {
     });
 };
 
-exports.test_yu = function (filter) {
+exports.test_yu = function (filter, expectedResults) {
+    expectedResults = expectedResults || [];
+
     var str, o;
     str = 'http://6.6.6.6/?q=[somewhere]';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[0] || encodeURI(str));
 
     str = 'http://6.6.6.6/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[1] || encodeURI(str));
 
     str = '//6.6.6.6/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[2] || encodeURI(str));
 
     str = 'http://[6.6.6.6]/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[3] || encodeURI(str));
 
     str = 'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[4] || encodeURI(str));
 
     str = 'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[5] || encodeURI(str));
 
     str = 'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:80';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[6] || encodeURI(str));
 
     str = '[]?&=#/:;';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[7] || encodeURI(str));
 
     // an feature indicator of which encodeURI()/encodeURIComponent() is used
     str = 'foo\uD800';
@@ -238,41 +240,40 @@ exports.test_yu = function (filter) {
 };
 
 exports.test_yufull = function (filter, expectedResults) {
-    if (!expectedResults || expectedResults.length !== 1)
-        throw new Error('must take 1 expected results');
+    expectedResults = expectedResults || [];
 
     var str, o;
     str = 'http://6.6.6.6/?q=[somewhere]';
     o = filter(str);
-    expect(o).to.eql('http://6.6.6.6/?q=%5Bsomewhere%5D');
+    expect(o).to.eql(expectedResults[0] || 'http://6.6.6.6/?q=%5Bsomewhere%5D');
 
     str = 'http://6.6.6.6/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[1] || encodeURI(str));
 
     str = '//6.6.6.6/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[2] || encodeURI(str));
 
     str = 'http://[6.6.6.6]/somewhere';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[3] || encodeURI(str));
 
     str = 'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/somewhere';
     o = filter(str);
-    expect(o).to.eql(str);
+    expect(o).to.eql(expectedResults[4] || str);
 
     str = 'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]';
     o = filter(str);
-    expect(o).to.eql(expectedResults[0]);
+    expect(o).to.eql(expectedResults[5] || str);
 
     str = 'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:80';
     o = filter(str);
-    expect(o).to.eql(str);
+    expect(o).to.eql(expectedResults[6] || str);
 
     str = '[]?&=#/:;';
     o = filter(str);
-    expect(o).to.eql(encodeURI(str));
+    expect(o).to.eql(expectedResults[7] || encodeURI(str));
 
     // an feature indicator of which encodeURI()/encodeURIComponent() is used
     str = 'foo\uD800';
