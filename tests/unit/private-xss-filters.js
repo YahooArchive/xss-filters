@@ -248,10 +248,14 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         
         it('filter yav-unquoted state transition test', function() {
             testutils.test_yav(filter.yavu, [
-                'foo&<&gt;\'"`&#32;&#9;&#10;&#11;&#12;&#13;', '&#12;', '\uFFFD',
-                "&#39;'",  "&#32;''", "&#9;''", "&#10;''", "&#12;''",
-                '&quot;"', '&#32;""', '&#9;""', '&#10;""', '&#12;""',
-                '&#96;`',  '&#32;``', '&#9;``', '&#10;``', '&#12;``']);
+                'foo&&lt;&gt;&#39;&quot;&#96;&#32;&#9;&#10;&#11;&#12;&#13;', '&#12;', '\uFFFD',
+                "&#39;&#39;",  "&#32;&#39;&#39;", "&#9;&#39;&#39;", "&#10;&#39;&#39;", "&#12;&#39;&#39;",
+                '&quot;&quot;', '&#32;&quot;&quot;', '&#9;&quot;&quot;', '&#10;&quot;&quot;', '&#12;&quot;&quot;',
+                '&#96;&#96;',  '&#32;&#96;&#96;', '&#9;&#96;&#96;', '&#10;&#96;&#96;', '&#12;&#96;&#96;']);
+
+            var s = "\x00=<>''onerror=alert(1)";
+            var o = filter.yavu(s);
+            expect(o).to.eql("\uFFFD&#61;&lt;&gt;&#39;&#39;onerror&#61;alert(1)");
         });
 
         it('filter yu state transition test', function() {
@@ -274,11 +278,29 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         });
 
         it('filter yufull state transition test', function() {
-            testutils.test_yufull(filter.yufull, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yufull(filter.yufull, [
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]',
+                null, // default
+                null  // default
+            ]);
         });
 
         it('filter yublf state transition test', function() {
-            testutils.test_yufull(filter.yublf, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yufull(filter.yublf, [
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]',
+                null, // default
+                null  // default
+            ]);
             testutils.test_yubl(filter.yublf, [
                 '%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E%1F%20j%0Aav&#x61;%0Dscript%09&col%00on;'
             ]);

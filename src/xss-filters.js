@@ -16,7 +16,7 @@ exports._getPrivFilters = function () {
         SQUOT  = /'/g,
         AMP    = /&/g,
         NULL   = /\x00/g,
-        SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^(?:["'`]|\x00+$|$)|[\x09-\x0D >])/g,
+        SPECIAL_ATTR_VALUE_UNQUOTED_CHARS = /(?:^$|[\x00\x09-\x0D "'`=<>])/g,
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
         SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
@@ -79,7 +79,7 @@ exports._getPrivFilters = function () {
     }
 
 
-    function htmlDecode(s, namedRefMap, reNamedRef, callback) {
+    function htmlDecode(s, namedRefMap, reNamedRef, callback, skipReplacement) {
         namedRefMap = namedRefMap || SENSITIVE_NAMED_REF_MAP;
         reNamedRef = reNamedRef || SENSITIVE_HTML_ENTITIES;
 
@@ -121,7 +121,8 @@ exports._getPrivFilters = function () {
                     // // num >= 0xD800 && num <= 0xDFFF, and 0x0D is separately handled, as it doesn't fall into the range of x.pec()
                     // return (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD' : x.frCoPt(num);
 
-                    return num === 0x80 ? '\u20AC'  // EURO SIGN (€)
+                    return skipReplacement ? fromCodePoint(num)
+                            : num === 0x80 ? '\u20AC'  // EURO SIGN (€)
                             : num === 0x82 ? '\u201A'  // SINGLE LOW-9 QUOTATION MARK (‚)
                             : num === 0x83 ? '\u0192'  // LATIN SMALL LETTER F WITH HOOK (ƒ)
                             : num === 0x84 ? '\u201E'  // DOUBLE LOW-9 QUOTATION MARK („)
@@ -205,7 +206,7 @@ exports._getPrivFilters = function () {
             // URI_PROTOCOL_WHITESPACES is required for left trim and remove interim whitespaces
             return s ? htmlDecode(s, URI_PROTOCOL_NAMED_REF_MAP, null, function() {
                 return this.replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
-            }): null;
+            }, true): null;
         },
 
         /*
@@ -309,11 +310,13 @@ exports._getPrivFilters = function () {
                     :  m === '\f'   ? '&#12;' // in hex: 0C
                     :  m === '\r'   ? '&#13;' // in hex: 0D
                     :  m === ' '    ? '&#32;' // in hex: 20
+                    :  m === '='    ? '&#61;' // in hex: 3D
+                    :  m === '<'    ? '&lt;'
                     :  m === '>'    ? '&gt;'
                     :  m === '"'    ? '&quot;'
                     :  m === "'"    ? '&#39;'
                     :  m === '`'    ? '&#96;'
-                    : /*empty or all null*/ '\uFFFD';
+                    : /*empty or null*/ '\uFFFD';
             });
         },
 
@@ -511,7 +514,7 @@ exports.inDoubleQuotedAttr = privFilters.yavd;
 * @function module:xss-filters#inUnQuotedAttr
 *
 * @param {string} s - An untrusted user input
-* @returns {string} If s contains any state breaking chars (\t, \n, \v, \f, \r, space, and >), they are escaped and encoded into their equivalent HTML entity representations. If s starts with ', " or `, they are escaped to enforce the attr value (unquoted) state. If the whole string is empty or all null, inject a \uFFFD character.
+* @returns {string} If s contains any state breaking chars (\t, \n, \v, \f, \r, space, null, ', ", `, <, >, and =), they are escaped and encoded into their equivalent HTML entity representations. If the string is empty, inject a \uFFFD character.
 *
 * @description
 * <p class="warning">Warning: This is NOT designed for any onX (e.g., onclick) attributes!</p>

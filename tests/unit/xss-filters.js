@@ -214,10 +214,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
          */
         it('filter inUnQuotedAttr state transition test', function() {
             testutils.test_yav(filter.inUnQuotedAttr, [
-                'foo&<&gt;\'"`&#32;&#9;&#10;&#11;&#12;&#13;', '&#12;', '\uFFFD',
-                "&#39;'",  "&#32;''", "&#9;''", "&#10;''", "&#12;''",
-                '&quot;"', '&#32;""', '&#9;""', '&#10;""', '&#12;""',
-                '&#96;`',  '&#32;``', '&#9;``', '&#10;``', '&#12;``']);
+                'foo&&lt;&gt;&#39;&quot;&#96;&#32;&#9;&#10;&#11;&#12;&#13;', '&#12;', '\uFFFD',
+                "&#39;&#39;",  "&#32;&#39;&#39;", "&#9;&#39;&#39;", "&#10;&#39;&#39;", "&#12;&#39;&#39;",
+                '&quot;&quot;', '&#32;&quot;&quot;', '&#9;&quot;&quot;', '&#10;&quot;&quot;', '&#12;&quot;&quot;',
+                '&#96;&#96;',  '&#32;&#96;&#96;', '&#9;&#96;&#96;', '&#10;&#96;&#96;', '&#12;&#96;&#96;']);
         });
         
 
@@ -230,7 +230,16 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '&#39;&#39;', '%20&#39;&#39;', '%09&#39;&#39;', '%0A&#39;&#39;', '%0C&#39;&#39;',
                 '%22%22',     '%20%22%22',     '%09%22%22',     '%0A%22%22',     '%0C%22%22',
                 '%60%60',     '%20%60%60',     '%09%60%60',     '%0A%60%60',     '%0C%60%60']);
-            testutils.test_yufull(filter.uriInSingleQuotedAttr, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yufull(filter.uriInSingleQuotedAttr, [
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]',
+                null, // default
+                null  // default
+            ]);
             testutils.test_yubl(filter.uriInSingleQuotedAttr);
         });
         it('filter uriInDoubleQuotedAttr state transition test', function() {
@@ -240,22 +249,49 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '\'\'',   '%20\'\'',   '%09\'\'',   '%0A\'\'',   '%0C\'\'',
                 '%22%22', '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22',
                 '%60%60', '%20%60%60', '%09%60%60', '%0A%60%60', '%0C%60%60']);
-            testutils.test_yufull(filter.uriInDoubleQuotedAttr, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yufull(filter.uriInDoubleQuotedAttr, [
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]',
+                null, // default
+                null  // default
+            ]);
             testutils.test_yubl(filter.uriInDoubleQuotedAttr);
         });
         it('filter uriInUnQuotedAttr state transition test', function() {
             // encodeURI('foo&<>\'"` \t\n\v\f\r') = foo&%3C%3E'%22%60%20%09%0A%0B%0C%0D
             testutils.test_yav(filter.uriInUnQuotedAttr, [
-                'foo&%3C%3E\'%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
-                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                'foo&%3C%3E&#39;%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
+                '&#39;&#39;', '%20&#39;&#39;',   '%09&#39;&#39;',     '%0A&#39;&#39;',   '%0C&#39;&#39;',
                 '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22',
                 '%60%60',  '%20%60%60', '%09%60%60', '%0A%60%60', '%0C%60%60']);
-            testutils.test_yufull(filter.uriInUnQuotedAttr, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yufull(filter.uriInUnQuotedAttr, [
+                'http://6.6.6.6/?q&#61;%5Bsomewhere%5D',
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]',
+                null, // default
+                '%5B%5D?&&#61;#/:;'
+            ]);
             testutils.test_yubl(filter.uriInUnQuotedAttr);
         });
         it('filter uriInHTMLData state transition test', function() {
             testutils.test_yd(filter.uriInHTMLData, ['foo&%3C%3E\'%22']);
-            testutils.test_yufull(filter.uriInHTMLData, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]']);
+            testutils.test_yufull(filter.uriInHTMLData, [
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]',
+                null, // default
+                null  // default
+            ]);
         });
         it('filter uriInHTMLComment state transition test', function() {
             testutils.test_yc(filter.uriInHTMLComment, [
@@ -268,7 +304,16 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '%3E%3Cscript%3Ealert(1)%3C/script%3E',
                 '----------%3E%3Cscript%3Ealert(1)%3C/script%3E',
                 '--%00%3E']);
-            testutils.test_yufull(filter.uriInHTMLComment, ['http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334] ']);
+            testutils.test_yufull(filter.uriInHTMLComment, [
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                'http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334] ',
+                null, // default
+                null  // default
+            ]);
         });
 
 
@@ -296,11 +341,20 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter uriPathInUnQuotedAttr state transition test', function() {
             // encodeURI('foo&<>\'"` \t\n\v\f\r') = foo&%3C%3E'%22%60%20%09%0A%0B%0C%0D
             testutils.test_yav(filter.uriPathInUnQuotedAttr, [
-                'foo&%3C%3E\'%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
-                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                'foo&%3C%3E&#39;%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
+                '&#39;&#39;', '%20&#39;&#39;',   '%09&#39;&#39;',     '%0A&#39;&#39;',   '%0C&#39;&#39;',
                 '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22',
                 '%60%60',  '%20%60%60', '%09%60%60', '%0A%60%60', '%0C%60%60']);
-            testutils.test_yu(filter.uriPathInUnQuotedAttr);
+            testutils.test_yu(filter.uriPathInUnQuotedAttr, [
+                'http://6.6.6.6/?q&#61;%5Bsomewhere%5D',
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                null, // default
+                '%5B%5D?&&#61;#/:;'
+            ]);
             testutils.test_yubl(filter.uriPathInUnQuotedAttr);
         });
         it('filter uriPathInHTMLData state transition test', function() {
@@ -344,8 +398,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter uriComponentInUnQuotedAttr state transition test', function() {
             // encodeURIComponent('foo&<>\'"` \t\n\v\f\r') = foo%26%3C%3E'%22%60%20%09%0A%0B%0C%0D
             testutils.test_yav(filter.uriComponentInUnQuotedAttr, [
-                'foo%26%3C%3E\'%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
-                '&#39;\'', '%20\'\'',   '%09\'\'',     '%0A\'\'',   '%0C\'\'',
+                'foo%26%3C%3E&#39;%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
+                '&#39;&#39;', '%20&#39;&#39;',   '%09&#39;&#39;',     '%0A&#39;&#39;',   '%0C&#39;&#39;',
                 '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22',
                 '%60%60',  '%20%60%60', '%09%60%60', '%0A%60%60', '%0C%60%60']);
             testutils.test_yuc(filter.uriComponentInUnQuotedAttr);
@@ -391,8 +445,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter uriFragmentInUnQuotedAttr state transition test', function() {
             // encodeuriFragment('foo&<>\'"` \t\n\v\f\r') = foo%26%3C%3E'%22%60%20%09%0A%0B%0C%0D
             testutils.test_yav(filter.uriFragmentInUnQuotedAttr, [
-                'foo%26%3C%3E\'%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
-                '&#39;\'', '%20\'\'',   '%09\'\'',   '%0A\'\'',   '%0C\'\'',
+                'foo%26%3C%3E&#39;%22%60%20%09%0A%0B%0C%0D', '%0C', '\uFFFD',
+                '&#39;&#39;', '%20&#39;&#39;',   '%09&#39;&#39;',   '%0A&#39;&#39;',   '%0C&#39;&#39;',
                 '%22%22',  '%20%22%22', '%09%22%22', '%0A%22%22', '%0C%22%22',
                 '%60%60',  '%20%60%60', '%09%60%60', '%0A%60%60', '%0C%60%60']);
             testutils.test_yuc(filter.uriFragmentInUnQuotedAttr);
