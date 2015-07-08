@@ -55,7 +55,7 @@ app.listen(3000);
 
 ### Client-side (browser)
 
-Simply download the latest minified version from the [`dist/`](./dist) folder. Embed it in your HTML file, and all filters are available in a global object called `xssFilters`.
+Simply download the latest minified version from the [`dist/`](./dist) folder OR from the <a href="https://cdn.rawgit.com/yahoo/xss-filters/master/dist/xss-filters.js">CDN</a>. Embed it in your HTML file, and all filters are available in a global object called `xssFilters`.
 
 ```html
 <!doctype html><!-- You need HTML 5 mode for browser -->
