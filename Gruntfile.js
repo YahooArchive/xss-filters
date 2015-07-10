@@ -50,7 +50,7 @@ module.exports = function(grunt) {
       },
       buildBrowserified: {
         src: 'dist/<%= pkg.name %>.js',
-        dest: 'dist/<%= pkg.name %>.js'
+        dest: 'dist/<%= pkg.name %>.min-browserified.js'
       },
       buildMin: {
         options: {

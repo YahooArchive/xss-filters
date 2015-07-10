@@ -51,7 +51,11 @@ exports._getPrivFilters = function () {
         URI_PROTOCOL_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n'};
 
     var x, 
-        strReplace = String.prototype.replace, 
+        strReplace = function (s, regexp, callback) {
+            return s === undefined ? 'undefined'
+                    : s === null            ? 'null'
+                    : s.toString().replace(regexp, callback);
+        },
         fromCodePoint = String.fromCodePoint || function(codePoint) {
             if (arguments.length === 0) {
                 return '';
@@ -72,90 +76,83 @@ exports._getPrivFilters = function () {
         return (s.length === 2 && s[0]) ? s[0] : null;
     }
 
-    function stringify(s, callback) {
-        return typeof s === 'undefined' ? 'undefined'
-             : s === null               ? 'null'
-             : callback.apply(s.toString(), [].splice.call(arguments, 2));
-    }
-
-
-    function htmlDecode(s, namedRefMap, reNamedRef, callback, skipReplacement) {
+    function htmlDecode(s, namedRefMap, reNamedRef, skipReplacement) {
+        
         namedRefMap = namedRefMap || SENSITIVE_NAMED_REF_MAP;
         reNamedRef = reNamedRef || SENSITIVE_HTML_ENTITIES;
 
-        var decodedStr, args = [].splice.call(arguments, 4);
+        function regExpFunction(m, num, named, named1) {
+            if (num) {
+                num = Number(num[0] <= '9' ? num : '0' + num);
+                // switch(num) {
+                //     case 0x80: return '\u20AC';  // EURO SIGN (€)
+                //     case 0x82: return '\u201A';  // SINGLE LOW-9 QUOTATION MARK (‚)
+                //     case 0x83: return '\u0192';  // LATIN SMALL LETTER F WITH HOOK (ƒ)
+                //     case 0x84: return '\u201E';  // DOUBLE LOW-9 QUOTATION MARK („)
+                //     case 0x85: return '\u2026';  // HORIZONTAL ELLIPSIS (…)
+                //     case 0x86: return '\u2020';  // DAGGER (†)
+                //     case 0x87: return '\u2021';  // DOUBLE DAGGER (‡)
+                //     case 0x88: return '\u02C6';  // MODIFIER LETTER CIRCUMFLEX ACCENT (ˆ)
+                //     case 0x89: return '\u2030';  // PER MILLE SIGN (‰)
+                //     case 0x8A: return '\u0160';  // LATIN CAPITAL LETTER S WITH CARON (Š)
+                //     case 0x8B: return '\u2039';  // SINGLE LEFT-POINTING ANGLE QUOTATION MARK (‹)
+                //     case 0x8C: return '\u0152';  // LATIN CAPITAL LIGATURE OE (Œ)
+                //     case 0x8E: return '\u017D';  // LATIN CAPITAL LETTER Z WITH CARON (Ž)
+                //     case 0x91: return '\u2018';  // LEFT SINGLE QUOTATION MARK (‘)
+                //     case 0x92: return '\u2019';  // RIGHT SINGLE QUOTATION MARK (’)
+                //     case 0x93: return '\u201C';  // LEFT DOUBLE QUOTATION MARK (“)
+                //     case 0x94: return '\u201D';  // RIGHT DOUBLE QUOTATION MARK (”)
+                //     case 0x95: return '\u2022';  // BULLET (•)
+                //     case 0x96: return '\u2013';  // EN DASH (–)
+                //     case 0x97: return '\u2014';  // EM DASH (—)
+                //     case 0x98: return '\u02DC';  // SMALL TILDE (˜)
+                //     case 0x99: return '\u2122';  // TRADE MARK SIGN (™)
+                //     case 0x9A: return '\u0161';  // LATIN SMALL LETTER S WITH CARON (š)
+                //     case 0x9B: return '\u203A';  // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (›)
+                //     case 0x9C: return '\u0153';  // LATIN SMALL LIGATURE OE (œ)
+                //     case 0x9E: return '\u017E';  // LATIN SMALL LETTER Z WITH CARON (ž)
+                //     case 0x9F: return '\u0178';  // LATIN CAPITAL LETTER Y WITH DIAERESIS (Ÿ)
+                // }
+                // // num >= 0xD800 && num <= 0xDFFF, and 0x0D is separately handled, as it doesn't fall into the range of x.pec()
+                // return (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD' : x.frCoPt(num);
 
-        return stringify(s, function() {
-            decodedStr = this.replace(NULL, '\uFFFD').replace(reNamedRef, function(m, num, named, named1) {
-                if (num) {
-                    num = Number(num[0] <= '9' ? num : '0' + num);
-                    // switch(num) {
-                    //     case 0x80: return '\u20AC';  // EURO SIGN (€)
-                    //     case 0x82: return '\u201A';  // SINGLE LOW-9 QUOTATION MARK (‚)
-                    //     case 0x83: return '\u0192';  // LATIN SMALL LETTER F WITH HOOK (ƒ)
-                    //     case 0x84: return '\u201E';  // DOUBLE LOW-9 QUOTATION MARK („)
-                    //     case 0x85: return '\u2026';  // HORIZONTAL ELLIPSIS (…)
-                    //     case 0x86: return '\u2020';  // DAGGER (†)
-                    //     case 0x87: return '\u2021';  // DOUBLE DAGGER (‡)
-                    //     case 0x88: return '\u02C6';  // MODIFIER LETTER CIRCUMFLEX ACCENT (ˆ)
-                    //     case 0x89: return '\u2030';  // PER MILLE SIGN (‰)
-                    //     case 0x8A: return '\u0160';  // LATIN CAPITAL LETTER S WITH CARON (Š)
-                    //     case 0x8B: return '\u2039';  // SINGLE LEFT-POINTING ANGLE QUOTATION MARK (‹)
-                    //     case 0x8C: return '\u0152';  // LATIN CAPITAL LIGATURE OE (Œ)
-                    //     case 0x8E: return '\u017D';  // LATIN CAPITAL LETTER Z WITH CARON (Ž)
-                    //     case 0x91: return '\u2018';  // LEFT SINGLE QUOTATION MARK (‘)
-                    //     case 0x92: return '\u2019';  // RIGHT SINGLE QUOTATION MARK (’)
-                    //     case 0x93: return '\u201C';  // LEFT DOUBLE QUOTATION MARK (“)
-                    //     case 0x94: return '\u201D';  // RIGHT DOUBLE QUOTATION MARK (”)
-                    //     case 0x95: return '\u2022';  // BULLET (•)
-                    //     case 0x96: return '\u2013';  // EN DASH (–)
-                    //     case 0x97: return '\u2014';  // EM DASH (—)
-                    //     case 0x98: return '\u02DC';  // SMALL TILDE (˜)
-                    //     case 0x99: return '\u2122';  // TRADE MARK SIGN (™)
-                    //     case 0x9A: return '\u0161';  // LATIN SMALL LETTER S WITH CARON (š)
-                    //     case 0x9B: return '\u203A';  // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (›)
-                    //     case 0x9C: return '\u0153';  // LATIN SMALL LIGATURE OE (œ)
-                    //     case 0x9E: return '\u017E';  // LATIN SMALL LETTER Z WITH CARON (ž)
-                    //     case 0x9F: return '\u0178';  // LATIN CAPITAL LETTER Y WITH DIAERESIS (Ÿ)
-                    // }
-                    // // num >= 0xD800 && num <= 0xDFFF, and 0x0D is separately handled, as it doesn't fall into the range of x.pec()
-                    // return (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD' : x.frCoPt(num);
+                return skipReplacement ? fromCodePoint(num)
+                        : num === 0x80 ? '\u20AC'  // EURO SIGN (€)
+                        : num === 0x82 ? '\u201A'  // SINGLE LOW-9 QUOTATION MARK (‚)
+                        : num === 0x83 ? '\u0192'  // LATIN SMALL LETTER F WITH HOOK (ƒ)
+                        : num === 0x84 ? '\u201E'  // DOUBLE LOW-9 QUOTATION MARK („)
+                        : num === 0x85 ? '\u2026'  // HORIZONTAL ELLIPSIS (…)
+                        : num === 0x86 ? '\u2020'  // DAGGER (†)
+                        : num === 0x87 ? '\u2021'  // DOUBLE DAGGER (‡)
+                        : num === 0x88 ? '\u02C6'  // MODIFIER LETTER CIRCUMFLEX ACCENT (ˆ)
+                        : num === 0x89 ? '\u2030'  // PER MILLE SIGN (‰)
+                        : num === 0x8A ? '\u0160'  // LATIN CAPITAL LETTER S WITH CARON (Š)
+                        : num === 0x8B ? '\u2039'  // SINGLE LEFT-POINTING ANGLE QUOTATION MARK (‹)
+                        : num === 0x8C ? '\u0152'  // LATIN CAPITAL LIGATURE OE (Œ)
+                        : num === 0x8E ? '\u017D'  // LATIN CAPITAL LETTER Z WITH CARON (Ž)
+                        : num === 0x91 ? '\u2018'  // LEFT SINGLE QUOTATION MARK (‘)
+                        : num === 0x92 ? '\u2019'  // RIGHT SINGLE QUOTATION MARK (’)
+                        : num === 0x93 ? '\u201C'  // LEFT DOUBLE QUOTATION MARK (“)
+                        : num === 0x94 ? '\u201D'  // RIGHT DOUBLE QUOTATION MARK (”)
+                        : num === 0x95 ? '\u2022'  // BULLET (•)
+                        : num === 0x96 ? '\u2013'  // EN DASH (–)
+                        : num === 0x97 ? '\u2014'  // EM DASH (—)
+                        : num === 0x98 ? '\u02DC'  // SMALL TILDE (˜)
+                        : num === 0x99 ? '\u2122'  // TRADE MARK SIGN (™)
+                        : num === 0x9A ? '\u0161'  // LATIN SMALL LETTER S WITH CARON (š)
+                        : num === 0x9B ? '\u203A'  // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (›)
+                        : num === 0x9C ? '\u0153'  // LATIN SMALL LIGATURE OE (œ)
+                        : num === 0x9E ? '\u017E'  // LATIN SMALL LETTER Z WITH CARON (ž)
+                        : num === 0x9F ? '\u0178'  // LATIN CAPITAL LETTER Y WITH DIAERESIS (Ÿ)
+                        : (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD'
+                        : x.frCoPt(num);
+            }
+            return namedRefMap[named || named1] || m;
+        }
 
-                    return skipReplacement ? fromCodePoint(num)
-                            : num === 0x80 ? '\u20AC'  // EURO SIGN (€)
-                            : num === 0x82 ? '\u201A'  // SINGLE LOW-9 QUOTATION MARK (‚)
-                            : num === 0x83 ? '\u0192'  // LATIN SMALL LETTER F WITH HOOK (ƒ)
-                            : num === 0x84 ? '\u201E'  // DOUBLE LOW-9 QUOTATION MARK („)
-                            : num === 0x85 ? '\u2026'  // HORIZONTAL ELLIPSIS (…)
-                            : num === 0x86 ? '\u2020'  // DAGGER (†)
-                            : num === 0x87 ? '\u2021'  // DOUBLE DAGGER (‡)
-                            : num === 0x88 ? '\u02C6'  // MODIFIER LETTER CIRCUMFLEX ACCENT (ˆ)
-                            : num === 0x89 ? '\u2030'  // PER MILLE SIGN (‰)
-                            : num === 0x8A ? '\u0160'  // LATIN CAPITAL LETTER S WITH CARON (Š)
-                            : num === 0x8B ? '\u2039'  // SINGLE LEFT-POINTING ANGLE QUOTATION MARK (‹)
-                            : num === 0x8C ? '\u0152'  // LATIN CAPITAL LIGATURE OE (Œ)
-                            : num === 0x8E ? '\u017D'  // LATIN CAPITAL LETTER Z WITH CARON (Ž)
-                            : num === 0x91 ? '\u2018'  // LEFT SINGLE QUOTATION MARK (‘)
-                            : num === 0x92 ? '\u2019'  // RIGHT SINGLE QUOTATION MARK (’)
-                            : num === 0x93 ? '\u201C'  // LEFT DOUBLE QUOTATION MARK (“)
-                            : num === 0x94 ? '\u201D'  // RIGHT DOUBLE QUOTATION MARK (”)
-                            : num === 0x95 ? '\u2022'  // BULLET (•)
-                            : num === 0x96 ? '\u2013'  // EN DASH (–)
-                            : num === 0x97 ? '\u2014'  // EM DASH (—)
-                            : num === 0x98 ? '\u02DC'  // SMALL TILDE (˜)
-                            : num === 0x99 ? '\u2122'  // TRADE MARK SIGN (™)
-                            : num === 0x9A ? '\u0161'  // LATIN SMALL LETTER S WITH CARON (š)
-                            : num === 0x9B ? '\u203A'  // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (›)
-                            : num === 0x9C ? '\u0153'  // LATIN SMALL LIGATURE OE (œ)
-                            : num === 0x9E ? '\u017E'  // LATIN SMALL LETTER Z WITH CARON (ž)
-                            : num === 0x9F ? '\u0178'  // LATIN CAPITAL LETTER Y WITH DIAERESIS (Ÿ)
-                            : (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD'
-                            : x.frCoPt(num);
-                }
-                return namedRefMap[named || named1] || m;
-            });
-            return callback ? callback.apply(decodedStr, args) : decodedStr;
-        });
+        return s === undefined  ? 'undefined'
+            : s === null        ? 'null'
+            : s.toString().replace(NULL, '\uFFFD').replace(reNamedRef, regExpFunction);
     }
 
     function cssEncode(chr) {
@@ -163,19 +160,19 @@ exports._getPrivFilters = function () {
         return '\\' + chr.charCodeAt(0).toString(16).toLowerCase() + ' ';
     }
     function css(s, reSensitiveChars) {
-        return htmlDecode(s, null, null, function() {
-            return this.replace(reSensitiveChars, cssEncode);
-        });
+        return htmlDecode(s).replace(reSensitiveChars, cssEncode);
     }
     function cssUrl(s, reSensitiveChars) {
-        return htmlDecode(s, null, null, function() {
-            // encodeURI() will throw error for use of the CSS_UNSUPPORTED_CODE_POINT (i.e., [\uD800-\uDFFF])
-            var s = x.yufull(this), protocol = getProtocol(s);
-            // prefix ## for blacklisted protocols
-            s = protocol && URI_BLACKLIST_PROTOCOLS[protocol.toLowerCase()] ? '##' + s : s;
+        // encodeURI() in yufull() will throw error for use of the CSS_UNSUPPORTED_CODE_POINT (i.e., [\uD800-\uDFFF])
+        s = x.yufull(htmlDecode(s));
+        var protocol = getProtocol(s);
 
-            return reSensitiveChars ? s.replace(reSensitiveChars, cssEncode) : s;
-        });
+        // prefix ## for blacklisted protocols
+        if (protocol && URI_BLACKLIST_PROTOCOLS[protocol.toLowerCase()]) {
+            s = '##' + s;
+        }
+
+        return reSensitiveChars ? s.replace(reSensitiveChars, cssEncode) : s;
     }
 
     return (x = {
@@ -204,9 +201,7 @@ exports._getPrivFilters = function () {
         yup: function(s) {
             s = getProtocol(s.replace(NULL, ''));
             // URI_PROTOCOL_WHITESPACES is required for left trim and remove interim whitespaces
-            return s ? htmlDecode(s, URI_PROTOCOL_NAMED_REF_MAP, null, function() {
-                return this.replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
-            }, true): null;
+            return s ? htmlDecode(s, URI_PROTOCOL_NAMED_REF_MAP, null, true).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase() : null;
         },
 
         /*
@@ -216,7 +211,7 @@ exports._getPrivFilters = function () {
          *
          */
         y: function(s) {
-            return stringify(s, strReplace, SPECIAL_HTML_CHARS, function (m) {
+            return strReplace(s, SPECIAL_HTML_CHARS, function (m) {
                 return m === '&' ? '&amp;'
                     :  m === '<' ? '&lt;'
                     :  m === '>' ? '&gt;'
@@ -228,13 +223,13 @@ exports._getPrivFilters = function () {
 
         // This filter is meant to introduce double-encoding, and should be used with extra care.
         ya: function(s) {
-            return stringify(s, strReplace, AMP, '&amp;');
+            return strReplace(s, AMP, '&amp;');
         },
 
         // FOR DETAILS, refer to inHTMLData()
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#data-state
         yd: function (s) {
-            return stringify(s, strReplace, LT, '&lt;');
+            return strReplace(s, LT, '&lt;');
         },
 
         // FOR DETAILS, refer to inHTMLComment()
@@ -250,7 +245,7 @@ exports._getPrivFilters = function () {
         // We do not care --\s>, which can possibly be intepreted as a valid close comment tag in very old browsers (e.g., firefox 3.6), as specified in the html4 spec
         // Reference: http://www.w3.org/TR/html401/intro/sgmltut.html#h-3.2.4
         yc: function (s) {
-            return stringify(s, strReplace, SPECIAL_COMMENT_CHARS, function(m){
+            return strReplace(s, SPECIAL_COMMENT_CHARS, function(m){
                 return m === '\x00' ? '\uFFFD'
                     : m === '--!' || m === '--' || m === '-' || m === ']' ? m + ' '
                     :/*
@@ -264,13 +259,13 @@ exports._getPrivFilters = function () {
         // FOR DETAILS, refer to inDoubleQuotedAttr()
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(double-quoted)-state
         yavd: function (s) {
-            return stringify(s, strReplace, QUOT, '&quot;');
+            return strReplace(s, QUOT, '&quot;');
         },
 
         // FOR DETAILS, refer to inSingleQuotedAttr()
         // Reference: https://html.spec.whatwg.org/multipage/syntax.html#attribute-value-(single-quoted)-state
         yavs: function (s) {
-            return stringify(s, strReplace, SQUOT, '&#39;');
+            return strReplace(s, SQUOT, '&#39;');
         },
 
         // FOR DETAILS, refer to inUnQuotedAttr()
@@ -303,7 +298,7 @@ exports._getPrivFilters = function () {
         // Example:
         // <input value={{{yavu s}}} name="passwd"/>
         yavu: function (s) {
-            return stringify(s, strReplace, SPECIAL_ATTR_VALUE_UNQUOTED_CHARS, function (m) {
+            return strReplace(s, SPECIAL_ATTR_VALUE_UNQUOTED_CHARS, function (m) {
                 return m === '\t'   ? '&#9;'  // in hex: 09
                     :  m === '\n'   ? '&#10;' // in hex: 0A
                     :  m === '\x0B' ? '&#11;' // in hex: 0B  for IE. IE<9 \v equals v, so use \x0B instead
@@ -332,10 +327,9 @@ exports._getPrivFilters = function () {
         // This is NOT a security-critical filter.
         // Reference: https://tools.ietf.org/html/rfc3986
         yufull: function (s) {
-            return x.yu(s)
-                    .replace(URL_IPV6, function(m, p) {
-                        return '//[' + p + ']';
-                    });
+            return x.yu(s).replace(URL_IPV6, function(m, p) {
+                return '//[' + p + ']';
+            });
         },
 
         // chain yufull() with yubl()
