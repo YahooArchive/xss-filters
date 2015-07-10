@@ -28,6 +28,9 @@ exports._getPrivFilters = function () {
 
     // TODO: CSS_DANGEROUS_FUNCTION_NAME = /(url\(|expression\()/ig;
     var CSS_UNQUOTED_CHARS = /[^%#+\-\w\.]/g,
+        // this regexp is applied after CSS_UNQUOTED_CHARS/CSS_UNQUOTED_URL for IE7
+        // it decodes \28 and \29 if css function patterns (url, expression etc.) are are encountered.
+        CSS_BLACKLIST_UNQUOTED = /(\\0*28 |\\0*29 )/g, 
         // \x7F and \x01-\x1F less \x09 are for Safari 5.0
         CSS_DOUBLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\"]/g,
         CSS_SINGLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\']/g,
@@ -357,11 +360,12 @@ exports._getPrivFilters = function () {
         // * http://www.w3.org/TR/CSS21/grammar.html 
         // * http://www.w3.org/TR/css-syntax-3/
         // 
-        // NOTE: delimitar in CSS - \ _ : ; ( ) " ' / , % # ! * @ . { }
+        // NOTE: delimitar in CSS -  \  _  :  ;  (  )  "  '  /  ,  %  #  !  *  @  .  {  }
+        //                        2d 5c 5f 3a 3b 28 29 22 27 2f 2c 25 23 21 2a 40 2e 7b 7d
 
         // CSS_UNQUOTED_CHARS = /[^%#+\-\w\.]/g,
         yceu: function(s) {
-            return css(s, CSS_UNQUOTED_CHARS);
+            return css(s, CSS_UNQUOTED_CHARS).replace(CSS_BLACKLIST_UNQUOTED, '');
         },
 
         // string1 = \"([^\n\r\f\\"]|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\"
@@ -382,7 +386,7 @@ exports._getPrivFilters = function () {
         // The state machine in CSS 3.0 is more well defined - http://www.w3.org/TR/css-syntax-3/#consume-a-url-token0
         // CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()   
         yceuu: function(s) {
-            return cssUrl(s, CSS_UNQUOTED_URL);
+            return cssUrl(s, CSS_UNQUOTED_URL).replace(CSS_BLACKLIST_UNQUOTED, '');
         },
 
         // for url("{{{yceud url}}}
