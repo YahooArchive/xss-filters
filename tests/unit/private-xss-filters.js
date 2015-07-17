@@ -316,25 +316,29 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
             '\u0000', ' ', '\r\n\t\f\v', '\\', '\\n\\r\\f\\0\\9\\a\\f',
             '-ide_nt', '"string"', "'string'",
-            '- \ _ : ; ( ) " \' / , % # ! * @ . { }', 
+            '- \ _ : ; ( ) " \' / , % # ! * @ . { } []', 
             'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
             'url(https://www.evil.com)', 
+            'u\x00\x00rl(https://www.evil.com)', 
+            '\\u\\r\x00\x00\\l\x00((evil.com))',
             'expression(body.scrollTop + 50 + px)', 
-            '(((()))) \\28 \\29',
+            '(((()))) \\28 \\29'
         ];
 
         it('filter yceu[uds] test', function() {
             var expectedResults = [ 'undefined', 'null',
-                '\\26 ',
+                ';-x:\'&\';-v:',
                 '1.1', '10%', '+10px', '-10px', '#fff', 
-                '\\d7ff ', '\\d800 ', '\\dfff ', '\\1234 567',
-                '\\fffd ', '\\20 ', '\\d \\a \\9 \\c \\b ', '\\5c ', '\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f',
-                '-ide_nt', '\\22 string\\22 ', "\\27 string\\27 ",
-                '-\\20 \\20 _\\20 \\3a \\20 \\3b \\20 \\20 \\20 \\22 \\20 \\27 \\20 \\2f \\20 \\2c \\20 %\\20 #\\20 \\21 \\20 \\2a \\20 \\40 \\20 .\\20 \\7b \\20 \\7d ', 
-                'http\\3a \\2f \\2f username\\3a password\\40 www.evil.com\\3a 8080\\2f \\3f k1\\3d v1\\26 k2\\3d v2#hash',
-                'urlhttps\\3a \\2f \\2f www.evil.com',
-                'expressionbody.scrollTop\\20 +\\20 50\\20 +\\20 px',
-                '\\20 \\5c 28\\20 \\5c 29',
+                ';-x:\'\uD7FF\';-v:', ';-x:\'\uD800\';-v:', ';-x:\'\uDFFF\';-v:', ';-x:\'\u1234567\';-v:',
+                ';-x:\'\uFFFD\';-v:', ';-x:\' \';-v:', ';-x:\'\\d \\a \\9 \\c \\b \';-v:', ';-x:\'\\5c \';-v:', ';-x:\'\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f\';-v:',
+                '-ide_nt', ';-x:\'"string"\';-v:', ';-x:\'\\27 string\\27 \';-v:',
+                ';-x:\'-  _ : ; ( ) " \\27  / , % # ! * @ . \\7b  \\7d  \\5b \\5d \';-v:', 
+                ';-x:\'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash\';-v:',
+                ';-x:\'-x-url(https://www.evil.com)\';-v:',
+                ';-x:\'u\ufffd\ufffdrl(https://www.evil.com)\';-v:',
+                ';-x:\'\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd((evil.com))\';-v:',
+                ';-x:\'expression(body.scrollTop + 50 + px)\';-v:',
+                ';-x:\'(((()))) \\5c 28 \\5c 29\';-v:'
             ];
             testutils.test_yce(filter.yceu, testPatterns, expectedResults);
         });
@@ -345,9 +349,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
                 '\uFFFD', ' ', '\\d \\a \\9 \\c \\b ', '\\5c ', '\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f',
                 '-ide_nt', '\\22 string\\22 ', "'string'",
-                '-  _ : ; ( ) \\22  \' / , % # ! * @ . { }',
+                '-  _ : ; ( ) \\22  \' / , % # ! * @ . \\7b  \\7d  \\5b \\5d ',
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
-                'url(https://www.evil.com)',
+                '-x-url(https://www.evil.com)',
+                'u\ufffd\ufffdrl(https://www.evil.com)',
+                '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd((evil.com))',
                 'expression(body.scrollTop + 50 + px)',
                 '(((()))) \\5c 28 \\5c 29',
             ];
@@ -360,9 +366,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
                 '\uFFFD', ' ', '\\d \\a \\9 \\c \\b ', '\\5c ', '\\5c n\\5c r\\5c f\\5c 0\\5c 9\\5c a\\5c f',
                 '-ide_nt', '"string"', "\\27 string\\27 ",
-                '-  _ : ; ( ) " \\27  / , % # ! * @ . { }',
+                '-  _ : ; ( ) " \\27  / , % # ! * @ . \\7b  \\7d  \\5b \\5d ',
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
-                'url(https://www.evil.com)',
+                '-x-url(https://www.evil.com)',
+                'u\ufffd\ufffdrl(https://www.evil.com)',
+                '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd((evil.com))',
                 'expression(body.scrollTop + 50 + px)',
                 '(((()))) \\5c 28 \\5c 29',
             ];
@@ -392,12 +400,12 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '%5Ca', '%ED%9F%BF', '%E1%88%B4567',
                 '%EF%BF%BD', '%20', '%0D%0A%09%0C%0B', '%5C', '%5Cn%5Cr%5Cf%5C0%5C9%5Ca%5Cf',
                 '-ide_nt', '%22string%22', "\\27 string\\27 ",
-                '-%20%20_%20:%20;%20%20%20%22%20\\27 %20/%20,%20%25%20#%20!%20*%20@%20.%20%7B%20%7D%20%5B%20%5D',
+                '-%20%20_%20:%20;%20%28%20%29%20%22%20\\27 %20/%20,%20%25%20#%20!%20*%20@%20.%20%7B%20%7D%20%5B%20%5D',
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
                 '%EF%BF%BD%08%0B%7F%0E-%1F',
-                '\\27 \\27 \\27 %22%22%22%22',
-                '##javascript:alert1',
-                '%20%5C28%20%5C29',
+                '%29%29%29%28%28%28\\27 \\27 \\27 %22%22%22%22',
+                '##javascript:alert%281%29',
+                '%28%28%28%28%29%29%29%29%20%5C28%20%5C29',
             ];
             testutils.test_yce(filter.yceuu, testPatterns, expectedResults);
         });
