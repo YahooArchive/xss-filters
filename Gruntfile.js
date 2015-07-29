@@ -80,6 +80,24 @@ module.exports = function(grunt) {
         }
       }
     },
+    bump: {
+      options: {
+        files: [ 'package.json', 'bower.json'],
+        updateConfigs: ['pkg'],
+        commit: true,
+        commitMessage: 'Release v%VERSION%',
+        commitFiles: ['package.json', 'bower.json', 'dist/.'],
+        createTag: true,
+        tagName: 'v%VERSION%',
+        tagMessage: 'Version %VERSION%',
+        push: true,
+        pushTo: 'origin',
+        gitDescribeOptions: '--tags --always --abbrev=1 --dirty=-d',
+        globalReplace: false,
+        prereleaseName: false,
+        regExp: false
+      }
+    },
     clean: {
       all: ['artifacts', 'node_modules', 'bower_components']
     }
@@ -91,10 +109,12 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-jsdoc');
+  grunt.loadNpmTasks('grunt-bump');
 
   grunt.registerTask('test', ['jshint', 'mocha_istanbul']);
   grunt.registerTask('dist', ['browserify', 'uglify'])
   grunt.registerTask('docs', ['jsdoc']);
   grunt.registerTask('default', ['test', 'dist']);
+  grunt.registerTask('release', ['bump-only', 'dist', 'bump-commit']);
 
 };
