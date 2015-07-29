@@ -320,7 +320,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
             'url(https://www.evil.com)', 
             'u\x00\x00rl(https://www.evil.com)', 
-            '\\u\\r\x00\x00\\l\x00((evil.com))',
+            '\\u\\r\x00\x00\\l\x00\\((evil.com))',
             'expression(body.scrollTop + 50 + px)', 
             '(((()))) \\28 \\29'
         ];
@@ -336,7 +336,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 ';-x:\'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash\';-v:',
                 ';-x:\'-x-url(https://www.evil.com)\';-v:',
                 ';-x:\'u\ufffd\ufffdrl(https://www.evil.com)\';-v:',
-                ';-x:\'\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd((evil.com))\';-v:',
+                ';-x:\'\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd\\5c ((evil.com))\';-v:',
                 ';-x:\'expression(body.scrollTop + 50 + px)\';-v:',
                 ';-x:\'(((()))) \\5c 28 \\5c 29\';-v:'
             ];
@@ -353,7 +353,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
                 '-x-url(https://www.evil.com)',
                 'u\ufffd\ufffdrl(https://www.evil.com)',
-                '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd((evil.com))',
+                '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd\\5c ((evil.com))',
                 'expression(body.scrollTop + 50 + px)',
                 '(((()))) \\5c 28 \\5c 29',
             ];
@@ -370,7 +370,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
                 '-x-url(https://www.evil.com)',
                 'u\ufffd\ufffdrl(https://www.evil.com)',
-                '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd((evil.com))',
+                '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd\\5c ((evil.com))',
                 'expression(body.scrollTop + 50 + px)',
                 '(((()))) \\5c 28 \\5c 29',
             ];

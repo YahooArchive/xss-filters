@@ -39,8 +39,8 @@ exports._getPrivFilters = function () {
         CSS_DOUBLE_QUOTED_CHARS = /[\x00-\x1F\x7F\[\]{}\\"]/g,
         CSS_SINGLE_QUOTED_CHARS = /[\x00-\x1F\x7F\[\]{}\\']/g,
         // (, \u207D and \u208D can be used in background: 'url(...)' in IE, assumed all \ chars are encoded by QUOTED_CHARS, and null is already replaced with \uFFFD
-        // otherwise, use CSS_BLACKLIST = /[a-zA-Z]*(?:\\?[\(\u207D\u208D]|\\0{0,4}28 ?|\\0{0,2}20[78][Dd] ?)+/g
-        CSS_BLACKLIST = /url(?:\\?[\(\u207D\u208D])+/g,
+        // otherwise, use this CSS_BLACKLIST instead (enhance it with url matching): /(?:\\?\(|[\u207D\u208D]|\\0{0,4}28 ?|\\0{0,2}20[78][Dd] ?)+/g
+        CSS_BLACKLIST = /url[\(\u207D\u208D]+/g,
         // this assumes encodeURI() and encodeURIComponent() has escaped 1-32, 127 for IE8
         CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()
 
