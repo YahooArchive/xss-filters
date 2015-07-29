@@ -27,13 +27,23 @@ exports._getPrivFilters = function () {
     var SENSITIVE_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|(Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast|ensp|emsp|thinsp);|(nbsp|amp|AMP|lt|LT|gt|GT|quot|QUOT);?)/g,
         SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', lt: '<', gt: '>', quot: '"', QUOT: '"'};
 
-    // TODO: CSS_DANGEROUS_FUNCTION_NAME = /(url\(|expression\()/ig;
-    var CSS_UNQUOTED_CHARS = /[^%#+\-\w\.]/g,
-        // \x7F and \x01-\x1F less \x09 are for Safari 5.0
-        CSS_DOUBLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\"]/g,
-        CSS_SINGLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\']/g,
-        // this assumes encodeURI() and encodeURIComponent() has escaped 1-32, 41, 127 for IE8
-        CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()   
+    // var CSS_VALID_VALUE = 
+    //     /^(?:
+    //     (?!-*expression)#?[-\w]+
+    //     |[+-]?(?:\d+|\d*\.\d+)(?:em|ex|ch|rem|px|mm|cm|in|pt|pc|%|vh|vw|vmin|vmax)?
+    //     |!important
+    //     | //empty
+    //     )$/i;
+    var CSS_VALID_VALUE = /^(?:(?!-*expression)#?[-\w]+|[+-]?(?:\d+|\d*\.\d+)(?:r?em|ex|ch|cm|mm|in|px|pt|pc|%|vh|vw|vmin|vmax)?|!important|)$/i,
+        // TODO: prevent double css escaping by not encoding \ again, but this may require CSS decoding
+        // \x7F and \x01-\x1F less \x09 are for Safari 5.0, added []{}/* for unbalanced quote
+        CSS_DOUBLE_QUOTED_CHARS = /[\x00-\x1F\x7F\[\]{}\\"]/g,
+        CSS_SINGLE_QUOTED_CHARS = /[\x00-\x1F\x7F\[\]{}\\']/g,
+        // (, \u207D and \u208D can be used in background: 'url(...)' in IE, assumed all \ chars are encoded by QUOTED_CHARS, and null is already replaced with \uFFFD
+        // otherwise, use this CSS_BLACKLIST instead (enhance it with url matching): /(?:\\?\(|[\u207D\u208D]|\\0{0,4}28 ?|\\0{0,2}20[78][Dd] ?)+/g
+        CSS_BLACKLIST = /url[\(\u207D\u208D]+/g,
+        // this assumes encodeURI() and encodeURIComponent() has escaped 1-32, 127 for IE8
+        CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()
 
     // Given a full URI, need to support "[" ( IPv6address ) "]" in URI as per RFC3986
     // Reference: https://tools.ietf.org/html/rfc3986
@@ -46,7 +56,7 @@ exports._getPrivFilters = function () {
     // Reference: http://shazzer.co.uk/database/All/Characters-after-javascript-uri
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#consume-a-character-reference
     // Reference for named characters: https://html.spec.whatwg.org/multipage/entities.json
-    var URI_BLACKLIST_PROTOCOLS = {'javascript':1, 'data':1, 'vbscript':1, 'mhtml':1},
+    var URI_BLACKLIST_PROTOCOLS = {'javascript':1, 'data':1, 'vbscript':1, 'mhtml':1, 'x-schema':1},
         URI_PROTOCOL_COLON = /(?::|&#[xX]0*3[aA];?|&#0*58;?|&colon;)/,
         URI_PROTOCOL_WHITESPACES = /(?:^[\x00-\x20]+|[\t\n\r\x00]+)/g,
         URI_PROTOCOL_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n'};
@@ -160,20 +170,16 @@ exports._getPrivFilters = function () {
         // space after \\HEX is needed by spec
         return '\\' + chr.charCodeAt(0).toString(16).toLowerCase() + ' ';
     }
-    function css(s, reSensitiveChars) {
-        return htmlDecode(s).replace(reSensitiveChars, cssEncode);
+    function cssBlacklist(s) {
+        return s.replace(CSS_BLACKLIST, function(m){ return '-x-' + m; });
     }
-    function cssUrl(s, reSensitiveChars) {
+    function cssUrl(s) {
         // encodeURI() in yufull() will throw error for use of the CSS_UNSUPPORTED_CODE_POINT (i.e., [\uD800-\uDFFF])
         s = x.yufull(htmlDecode(s));
         var protocol = getProtocol(s);
 
         // prefix ## for blacklisted protocols
-        if (protocol && URI_BLACKLIST_PROTOCOLS[protocol.toLowerCase()]) {
-            s = '##' + s;
-        }
-
-        return reSensitiveChars ? s.replace(reSensitiveChars, cssEncode) : s;
+        return (protocol && URI_BLACKLIST_PROTOCOLS[protocol.toLowerCase()]) ? '##' + s : s;
     }
 
     return (x = {
@@ -352,23 +358,22 @@ exports._getPrivFilters = function () {
         // * http://www.w3.org/TR/CSS21/grammar.html 
         // * http://www.w3.org/TR/css-syntax-3/
         // 
-        // NOTE: delimitar in CSS - \ _ : ; ( ) " ' / , % # ! * @ . { }
+        // NOTE: delimiter in CSS -  \  _  :  ;  (  )  "  '  /  ,  %  #  !  *  @  .  {  }
+        //                        2d 5c 5f 3a 3b 28 29 22 27 2f 2c 25 23 21 2a 40 2e 7b 7d
 
-        // CSS_UNQUOTED_CHARS = /[^%#+\-\w\.]/g,
         yceu: function(s) {
-            return css(s, CSS_UNQUOTED_CHARS);
+            s = htmlDecode(s);
+            return CSS_VALID_VALUE.test(s) ? s : ";-x:'" + cssBlacklist(s.replace(CSS_SINGLE_QUOTED_CHARS, cssEncode)) + "';-v:";
         },
 
         // string1 = \"([^\n\r\f\\"]|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\"
-        // CSS_DOUBLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\"]/g,
         yced: function(s) {
-            return css(s, CSS_DOUBLE_QUOTED_CHARS);
+            return cssBlacklist(htmlDecode(s).replace(CSS_DOUBLE_QUOTED_CHARS, cssEncode));
         },
 
         // string2 = \'([^\n\r\f\\']|\\{nl}|\\[^\n\r\f0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*\'
-        // CSS_SINGLE_QUOTED_CHARS = /[\x01-\x1F\x7F\\']/g,
         yces: function(s) {
-            return css(s, CSS_SINGLE_QUOTED_CHARS);
+            return cssBlacklist(htmlDecode(s).replace(CSS_SINGLE_QUOTED_CHARS, cssEncode));
         },
 
         // for url({{{yceuu url}}}
@@ -377,19 +382,21 @@ exports._getPrivFilters = function () {
         // The state machine in CSS 3.0 is more well defined - http://www.w3.org/TR/css-syntax-3/#consume-a-url-token0
         // CSS_UNQUOTED_URL = /['\(\)]/g; // " \ treated by encodeURI()   
         yceuu: function(s) {
-            return cssUrl(s, CSS_UNQUOTED_URL);
+            return cssUrl(s).replace(CSS_UNQUOTED_URL, function (chr) {
+                return  chr === '\''        ? '\\27 ' :
+                        chr === '('         ? '%28' :
+                        /* chr === ')' ? */   '%29';
+            });
         },
 
         // for url("{{{yceud url}}}
-        // CSS_DOUBLE_QUOTED_URL has nothing else to escape (optimized version by chaining with yufull)
         yceud: function(s) { 
             return cssUrl(s);
         },
 
         // for url('{{{yceus url}}}
-        // CSS_SINGLE_QUOTED_URL = /'/g; (optimized version by chaining with yufull)
         yceus: function(s) { 
-            return cssUrl(s, SQUOT);
+            return cssUrl(s).replace(SQUOT, '\\27 ');
         }
     });
 };
