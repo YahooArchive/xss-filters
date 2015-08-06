@@ -84,7 +84,7 @@ and retrieve your data with `document.getElementById('strJS').value`.
 
 ### The API
 
-There are five context-sensitive filters for generic input:
+There are five context-sensitive filters for textual input:
  - `<div>` `{{{inHTMLData data}}}` `</div>`
  - `<!--` `{{{inHTMLComment comment}}}` `-->`
  - `<input value='` `{{{inSingleQuotedAttr value}}}` `'/>`

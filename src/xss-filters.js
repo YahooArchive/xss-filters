@@ -82,6 +82,29 @@ exports._getPrivFilters = function () {
             return String.fromCharCode((codePoint >> 10) + 0xD800, (codePoint % 0x400) + 0xDC00);
         };
 
+    // patch document.write() and document.writeln() to properly handle NULL for IE 9 or below
+    /*jshint -W030 */
+    typeof document !== 'undefined' && function () {
+        var doc=document,b=doc.createElement('b'),w=doc.write,wl=doc.writeln, patch;
+        b.innerHTML='\x001';
+        if (!b.innerHTML.length && w) {
+            patch = function(original) {
+                return function() {
+                    var args = arguments, i = 0, len = args.length, s;
+                    // replace every NULL char with \uFFFD in every argument
+                    for (; i < len; i++) {
+                        if (typeof (s = args[i]) === 'string') {
+                            args[i] = s.replace(NULL, '\uFFFD');
+                        }
+                    }
+                    return Function.prototype.apply.call(original, doc, args);
+                };
+            };
+            /*jshint -W030 */
+            doc.write = patch(w);
+            doc.writeln = patch(wl);
+        }
+    }();
 
     function getProtocol(s) {
         s = s.split(URI_PROTOCOL_COLON, 2);
