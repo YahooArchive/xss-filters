@@ -69,7 +69,7 @@ module.exports = function(grunt) {
     },
     mocha_istanbul: {
       coverage: {
-        src: 'tests/unit',
+        src: 'tests/node-unit-tests.js',
         options: {
           coverageFolder: 'artifacts/test/coverage',
           check: {
@@ -78,6 +78,18 @@ module.exports = function(grunt) {
           },
           timeout: 10000
         }
+      }
+    },
+    karma: {
+      options: {
+        configFile: 'karma.conf.js'
+      },
+      ci: {
+        
+      },
+      dev: {
+        reporters: 'dots',
+        browsers: ['Chrome']
       }
     },
     clean: {
@@ -91,8 +103,15 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-jsdoc');
+  grunt.loadNpmTasks('grunt-karma');
 
-  grunt.registerTask('test', ['jshint', 'mocha_istanbul']);
+
+  var testSet = ['jshint', 'mocha_istanbul'];
+
+  if (process.env.TRAVIS && process.env.TRAVIS_NODE_VERSION === '0.12')
+    testSet.push('dist', 'karma:ci');
+
+  grunt.registerTask('test', testSet);
   grunt.registerTask('dist', ['browserify', 'uglify'])
   grunt.registerTask('docs', ['jsdoc']);
   grunt.registerTask('default', ['test', 'dist']);

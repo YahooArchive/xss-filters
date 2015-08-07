@@ -3,11 +3,8 @@ Copyright (c) 2015, Yahoo! Inc. All rights reserved.
 Copyrights licensed under the New BSD License.
 See the accompanying LICENSE file for terms.
 */
-/* jshint multistr:true */
 
-(function() {
-
-var expect = require('expect.js');
+(function(exports) {
 
 exports.test_yd = function (filter, expectedResults) {
     if (!expectedResults || expectedResults.length !== 1)
@@ -79,7 +76,7 @@ exports.test_yav = function (filter, expectedResults) {
     o = filter(123);
     expect(o).to.eql('123');
 
-    str = 'foo&<>\'"` \t\n\v\f\r';
+    str = 'foo&<>\'"` \t\n\x0B\f\r';
     o = filter(str);
     expect(o).to.eql(expectedResults[0]);
 
@@ -231,12 +228,7 @@ exports.test_yu = function (filter, expectedResults) {
     expect(o).to.eql(expectedResults[7] || encodeURI(str));
 
     // an feature indicator of which encodeURI()/encodeURIComponent() is used
-    str = 'foo\uD800';
-    try {
-        o = filter(str);
-    } catch (err) {
-        expect(err.message).to.eql('URI malformed');
-    }
+    expect(function() { filter('foo\uD800'); }).to.throwError(/(?:malformed|invalid character|illegal UTF-16 sequence)/);
 };
 
 exports.test_yufull = function (filter, expectedResults) {
@@ -276,12 +268,7 @@ exports.test_yufull = function (filter, expectedResults) {
     expect(o).to.eql(expectedResults[7] || encodeURI(str));
 
     // an feature indicator of which encodeURI()/encodeURIComponent() is used
-    str = 'foo\uD800';
-    try {
-        o = filter(str);
-    } catch (err) {
-        expect(err.message).to.eql('URI malformed');
-    }
+    expect(function() { filter('foo\uD800'); }).to.throwError(/(?:malformed|invalid character|illegal UTF-16 sequence)/);
 };
 
 exports.test_yuc = function (filter) {
@@ -319,16 +306,11 @@ exports.test_yuc = function (filter) {
     expect(o).to.eql(encodeURIComponent(str));
 
     // an feature indicator of which encodeURI()/encodeURIComponent() is used
-    str = 'foo\uD800';
-    try {
-        o = filter(str);
-    } catch (err) {
-        expect(err.message).to.eql('URI malformed');
-    }
+    expect(function() { filter('foo\uD800'); }).to.throwError(/(?:malformed|invalid character|illegal UTF-16 sequence)/);
 };
 
 exports.test_yce = function (filter, testPatterns, expectedResults) {
-    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length)
+    if (!expectedResults || !testPatterns || testPatterns.length !== expectedResults.length) 
         throw new Error('must define test patterns and expected results');
 
     testPatterns.forEach(function(str, i) {
@@ -337,4 +319,4 @@ exports.test_yce = function (filter, testPatterns, expectedResults) {
     });
 };
 
-})();
+})(typeof exports === 'undefined' ? (testutils = {}) : exports);

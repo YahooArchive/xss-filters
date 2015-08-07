@@ -7,14 +7,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
          Adonis Fung <adon@yahoo-inc.com>
          Albert Yu <albertyu@yahoo-inc.com>
 */
-/* jshint multistr:true */
 (function() {
 
-    require("mocha");
-
-    var expect = require('expect.js');
-    var filter = require('../../src/xss-filters')._privFilters;
-    var testutils = require('../utils.js');
+    var filter = xssFilters._privFilters;
 
     describe("private-xss-filters: existence tests", function() {
         it('filter y exists', function() {
@@ -98,8 +93,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         // an feature indicator of which encodeURI() and encodeURIComponent is used
         it('filter yuc and yu throw URI malformed', function() {
-            expect(function() { filter.yu('foo\uD800'); }).to.throwError(/URI malformed/);
-            expect(function() { filter.yuc('foo\uD800'); }).to.throwError(/URI malformed/);
+            expect(function() { filter.yu('foo\uD800'); }).to.throwError(/(?:malformed|invalid character|illegal UTF-16 sequence)/);
+            expect(function() { filter.yuc('foo\uD800'); }).to.throwError(/(?:malformed|invalid character|illegal UTF-16 sequence)/);
         });
 
         it('filters handling of undefined input', function() {
@@ -232,7 +227,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filter yav-single-quoted state transition test', function() {
             testutils.test_yav(filter.yavs, [
-                'foo&<>&#39;"` \t\n\v\f\r', '\f', '',
+                'foo&<>&#39;"` \t\n\x0B\f\r', '\f', '',
                 '&#39;&#39;', ' &#39;&#39;', '\t&#39;&#39;', '\n&#39;&#39;', '\f&#39;&#39;',
                 '""',         ' ""',         '\t""',         '\n""',         '\f""',
                 '``',         ' ``',         '\t``',         '\n``',         '\f``']);
@@ -240,7 +235,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filter yav-double-quoted state transition test', function() {
             testutils.test_yav(filter.yavd, [
-                'foo&<>\'&quot;` \t\n\v\f\r', '\f', '',
+                'foo&<>\'&quot;` \t\n\x0B\f\r', '\f', '',
                 "''",           " ''",           "\t''",           "\n''",           "\f''", 
                 '&quot;&quot;', ' &quot;&quot;', '\t&quot;&quot;', '\n&quot;&quot;', '\f&quot;&quot;',
                 '``',           ' ``',           '\t``',           '\n``',           '\f``']);
@@ -314,7 +309,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             '&',
             '1.1', '10%', '+10px', '-10px', '#fff', 
             '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
-            '\u0000', ' ', '\r\n\t\f\v', '\\', '\\n\\r\\f\\0\\9\\a\\f',
+            '\u0000', ' ', '\r\n\t\f\x0B', '\\', '\\n\\r\\f\\0\\9\\a\\f',
             '-ide_nt', '"string"', "'string'",
             '- \ _ : ; ( ) " \' / , % # ! * @ . { } []', 
             'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
@@ -355,7 +350,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'u\ufffd\ufffdrl(https://www.evil.com)',
                 '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd\\5c ((evil.com))',
                 'expression(body.scrollTop + 50 + px)',
-                '(((()))) \\5c 28 \\5c 29',
+                '(((()))) \\5c 28 \\5c 29'
             ];
             testutils.test_yce(filter.yced, testPatterns, expectedResults);
         });
@@ -372,7 +367,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 'u\ufffd\ufffdrl(https://www.evil.com)',
                 '\\5c u\\5c r\ufffd\ufffd\\5c l\ufffd\\5c ((evil.com))',
                 'expression(body.scrollTop + 50 + px)',
-                '(((()))) \\5c 28 \\5c 29',
+                '(((()))) \\5c 28 \\5c 29'
             ];
             testutils.test_yce(filter.yces, testPatterns, expectedResults);
         });
@@ -383,14 +378,14 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             '&',
             '1.1', '10%', '+10px', '-10px', '#fff', 
             '\\a', '\uD7FF', '\u1234567',
-            '\u0000', ' ', '\r\n\t\f\v', '\\', '\\n\\r\\f\\0\\9\\a\\f',
+            '\u0000', ' ', '\r\n\t\f\x0B', '\\', '\\n\\r\\f\\0\\9\\a\\f',
             '-ide_nt', '"string"', "'string'",
             '- \ _ : ; ( ) " \' / , % # ! * @ . { } [ ]', 
             'http://username:password@www.evil.com:8080/?k1=v1&k2=v2#hash',
             '\u0000\u0008\u000b\u007f\u000e-\u001f',
             '&rpar;&#x00029;&#41;&lpar;&#x00028;&#40;&apos;&#x00027;&#39;&quot;&QUOT;&#x00022;&#34',
             'javascript:alert(1)',
-            '(((()))) \\28 \\29',
+            '(((()))) \\28 \\29'
         ];
 
         it('filter yceuu[uds] attribute test', function() {
@@ -405,7 +400,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '%EF%BF%BD%08%0B%7F%0E-%1F',
                 '%29%29%29%28%28%28\\27 \\27 \\27 %22%22%22%22',
                 '##javascript:alert%281%29',
-                '%28%28%28%28%29%29%29%29%20%5C28%20%5C29',
+                '%28%28%28%28%29%29%29%29%20%5C28%20%5C29'
             ];
             testutils.test_yce(filter.yceuu, testPatterns, expectedResults);
         });
