@@ -20,12 +20,14 @@ exports._getPrivFilters = function () {
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
         SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
-    // CSS sensitive chars: ()"'/,!*@{}:;
-    // By CSS: (Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(quot|QUOT)
-    // By URI_PROTOCOL: (Tab|NewLine);
+    // Only a limited set of named references require decoding :
+    //  for CSS:                     (Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(nbsp|quot|QUOT);?   // ref: PPSE-1742
+    //  for URI:                     (Tab|NewLine);    // colon; is decoded by URI_PROTOCOL_COLON
+    //  for generic html decoding:   (apos;|(lt|LT|gt|GT|amp|AMP|quot|QUOT);?)
     var SENSITIVE_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|(Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast|ensp|emsp|thinsp);|(nbsp|amp|AMP|lt|LT|gt|GT|quot|QUOT);?)/g,
         SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', AMP: '&', lt: '<', LT: '<', gt: '>', GT: '>', quot: '"', QUOT: '"'};
 
+    // CSS sensitive chars: ()"'/,!*@{}:;
     // var CSS_VALID_VALUE = 
     //     /^(?:
     //     (?!-*expression)#?[-\w]+
