@@ -81,9 +81,10 @@ exports._getPrivFilters = function () {
         };
 
 
-    function getProtocol(s) {
-        s = s.split(URI_PROTOCOL_COLON, 2);
-        return (s.length === 2 && s[0]) ? s[0] : null;
+    function getProtocol(str) {
+        var s = str.split(URI_PROTOCOL_COLON, 2);
+        // str.length !== s[0].length is for older IE (e.g., v8), where delimeter residing at last will result in length equals 1, but not 2
+        return (s[0] && (s.length === 2 || str.length !== s[0].length)) ? s[0] : null;
     }
 
     function htmlDecode(s, namedRefMap, reNamedRef, skipReplacement) {
@@ -178,6 +179,7 @@ exports._getPrivFilters = function () {
         var protocol = getProtocol(s);
 
         // prefix ## for blacklisted protocols
+        // here .replace(URI_PROTOCOL_WHITESPACES, '') is not needed since yufull has already percent-encoded the whitespaces
         return (protocol && URI_BLACKLIST_PROTOCOLS[protocol.toLowerCase()]) ? '##' + s : s;
     }
 
