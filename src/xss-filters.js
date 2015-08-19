@@ -23,8 +23,8 @@ exports._getPrivFilters = function () {
     // CSS sensitive chars: ()"'/,!*@{}:;
     // By CSS: (Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(quot|QUOT)
     // By URI_PROTOCOL: (Tab|NewLine);
-    var SENSITIVE_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|(Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast|ensp|emsp|thinsp);|(nbsp|amp|AMP|lt|LT|gt|GT|quot|QUOT);?)/g,
-        SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', lt: '<', gt: '>', quot: '"', QUOT: '"'};
+    var SENSITIVE_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|(Tab|NewLine|colon|semi|lpar|rpar|apos|b?sol|comma|excl|ast|midast|ensp|emsp|thinsp);|(nbsp|amp|AMP|lt|LT|gt|GT|quot|QUOT);?)/g,
+        SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', bsol: '\\', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', lt: '<', gt: '>', quot: '"', QUOT: '"'};
 
     // var CSS_VALID_VALUE = 
     //     /^(?:
@@ -85,6 +85,46 @@ exports._getPrivFilters = function () {
         var s = str.split(URI_PROTOCOL_COLON, 2);
         // str.length !== s[0].length is for older IE (e.g., v8), where delimeter residing at last will result in length equals 1, but not 2
         return (s[0] && (s.length === 2 || str.length !== s[0].length)) ? s[0] : null;
+    }
+
+
+    // a simplified polyfill of arrayIndexOf
+    function arrayIndexOf(arr, element) {
+        for (var i = 0, len = arr.length; i < len; i++) {
+            if (arr[i] === element) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // URI_ABS is enforced using a whitelist manner, where as URI_REL is in blacklist designed according to the spec
+    // Ref: https://url.spec.whatwg.org/#url-parsing
+    var URL_ABS = /^[\x00-\x20]*([a-zA-Z][a-zA-Z0-9+-.\t\n\r]*:)[\/\\]*([^:\/\\?#]*)/,
+        URL_REL = /^[\x00-\x20]*(?![\/\\]{2}|[a-zA-Z][a-zA-Z0-9+-.\t\n\r]*:)/,
+        URL_WHITESPACES = /[\t\n\r]+/g;
+    function yuwlFactory(options) {
+
+        options || (options = {});
+        // default is to allow only absoluteUrl with the stricter and faster scheme
+        options.allowRelPath = options.allowRelPath !== false; // defaulted to true
+
+        // all allowed protocols must be lowercased
+        options.protocols = options.protocols || ['http:', 'https:', ''];
+        // all allowed hosts must be lowercased
+        // options.hosts = options.hosts || undefined;
+
+        return function(url) {
+
+            url = htmlDecode(url);
+            // extract the protocol and host
+            var abs = url.match(URI_ABS);
+            return (abs === null && options.allowRelPath && URI_REL.test(url)) || 
+                (abs !== null &&
+                    arrayIndexOf(options.protocols, abs[1].replace(URL_WHITESPACES, '').toLowerCase()) !== -1 &&
+                    (options.hosts === undefined || abs[2] && arrayIndexOf(options.hosts, abs[2].replace(URL_WHITESPACES, '').toLowerCase() !== -1) ? url : null;
+
+        };
     }
 
     function htmlDecode(s, namedRefMap, reNamedRef, skipReplacement) {
