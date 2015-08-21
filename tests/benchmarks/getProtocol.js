@@ -8,22 +8,19 @@ Note:    The stats are collected using nodejs, and may not reflect the actual pe
 
 Stats
 ============
-using htmlDecode old x 6,589 ops/sec ±2.68% (97 runs sampled)
-using htmlDecode new x 7,507 ops/sec ±0.73% (98 runs sampled)
-using getProtocol old x 10,182 ops/sec ±0.80% (99 runs sampled)
-using getProtocol old w/ new decoder x 22,613 ops/sec ±0.70% (98 runs sampled)
-using getProtocol new (decode first, then match) x 24,759 ops/sec ±0.79% (95 runs sampled)
-using getProtocol new (greedy match first, then decode and match) x 23,064 ops/sec ±0.80% (94 runs sampled)
-using getProtocol new (greedy match first, then decode and match) w/old decoder x 9,522 ops/sec ±0.79% (93 runs sampled)
-using searchProtocol 1 x 24,702 ops/sec ±0.76% (93 runs sampled)
-using searchProtocol 2 (greedy match first, then decode and match) x 19,267 ops/sec ±0.68% (93 runs sampled)
-legit samples | using getProtocol old x 10,370 ops/sec ±1.01% (95 runs sampled)
-legit samples | using getProtocol old w/new decoder x 10,787 ops/sec ±0.72% (98 runs sampled)
-legit samples | using getProtocol new (decode first, then match) x 7,622 ops/sec ±0.68% (100 runs sampled)
-legit samples | using getProtocol new (greedy match first, then decode and match) x 20,110 ops/sec ±0.59% (101 runs sampled)
-legit samples | using getProtocol new (greedy match first, then decode and match) w/old decoder x 8,113 ops/sec ±0.53% (100 runs sampled)
-legit samples | using searchProtocol 1 x 6,822 ops/sec ±0.81% (95 runs sampled)
-legit samples | using searchProtocol 2 (greedy match first, then decode and match) x 11,234 ops/sec ±0.75% (96 runs sampled)
+using htmlDecode old x 5,055 ops/sec ±2.97% (93 runs sampled)
+using htmlDecode new x 6,510 ops/sec ±0.89% (98 runs sampled)
+using getProtocol old x 9,834 ops/sec ±0.90% (95 runs sampled)
+using getProtocol old w/ new decoder x 22,419 ops/sec ±0.94% (94 runs sampled)
+using getProtocol new (decode first, then match) x 25,975 ops/sec ±0.80% (93 runs sampled)
+using getProtocol new fastest x 85,482 ops/sec ±0.82% (96 runs sampled)
+using getProtocol new (greedy match first, then decode and match) w/old decoder x 9,726 ops/sec ±0.80% (96 runs sampled)
+legit samples | using getProtocol old x 9,736 ops/sec ±0.78% (94 runs sampled)
+legit samples | using getProtocol old w/new decoder x 10,116 ops/sec ±0.82% (97 runs sampled)
+legit samples | using getProtocol new (decode first, then match) x 7,807 ops/sec ±0.80% (97 runs sampled)
+legit samples | using getProtocol new fastest x 34,412 ops/sec ±0.79% (97 runs sampled)
+legit samples | using getProtocol new (greedy match first, then decode and match) w/old decoder x 8,254 ops/sec ±0.80% (96 runs sampled)
+Fastest is using getProtocol new fastest
 
 Conclusion
 ============
@@ -142,27 +139,33 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
  //        namedRefOptionalSemiColon = /^(nbsp|amp|AMP|lt|LT|gt|GT|quot|QUOT);?/;
  // {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', bsol: '\\', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', lt: '<', gt: '>', quot: '"', QUOT: '"'};
 
-    // no semi-colon needed if it's optional  
-    // to generate, given {'Tab;':'\t', 'NewLine;': '\n' ... }, replace repeatedly using /'(\w)([\w;]+)'\s*:\s*'([^']*)'/g with '$1': {'$2': '$3'}
+    // Specified here are those html entities selected for decoding, they're sensitive to the following contexts 
+    //  CSS:     (Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(quot|QUOT);?      // CSS sensitive chars: ()"'/,!*@{}:;
+    //  URI:     (bsol|Tab|NewLine); 
+    //  common:  (amp|AMP|gt|GT|lt|LT|quote|QUOT);?
+    // To generate trie, given {'Tab;':'\t', 'NewLine;': '\n' ... }, (no semi-colon needed if it's optional)
+    // replace it repeatedly using /'(\w)([\w;]+)'\s*:\s*'([^']*)'/g with '$1': {'$2': '$3'}
+    /*jshint -W075 */
     var trieNamedRef = {
-        'a': {'m': {'p': '&'},                         'p': {'o': {'s': {';': '\''}}},         's': {'t': {';': '*'}}},
         'A': {'M': {'P': '&'}},
+        'G': {'T': '>'},
+        'L': {'T': '<'},
+        'N': {'e': {'w': {'L': {'i': {'n': {'e': {';': '\n'}}}}}}},
+        'Q': {'U': {'O': {'T': '"'}}},
+        'T': {'a': {'b': {';': '\t'}}},
+        'a': {'m': {'p': '&'},                         'p': {'o': {'s': {';': '\''}}},         's': {'t': {';': '*'}}},
         'b': {'s': {'o': {'l': {';': '\\'}}}},
         'c': {'o': {'m': {'m': {'a': {';': ','}}}},    'o': {'l': {'o': {'n': {';': ':'}}}}},
         'e': {'x': {'c': {'l': {';': '!'}}},           'n': {'s': {'p': {';': '\u2002'}}},     'm': {'s': {'p': {';': '\u2003'}}}},
         'g': {'t': '>'},
-        'G': {'T': '>'},
         'l': {'p': {'a': {'r': {';': '('}}},           't':     '<'},
-        'L': {'T': '<'},
         'm': {'i': {'d': {'a': {'s': {'t': {';': '*'}}}}}},
         'n': {'b': {'s': {'p': '\xA0'}}},
-        'N': {'e': {'w': {'L': {'i': {'n': {'e': {';': '\n'}}}}}}},
         'q': {'u': {'o': {'t': '"'}}},
-        'Q': {'U': {'O': {'T': '"'}}},
         'r': {'p': {'a': {'r': {';': ')'}}}},
         's': {'e': {'m': {'i': {';': ';'}}},           'o': {'l': {';': '/'}}},
-        't': {'h': {'i': {'n': {'s': {'p': {';': '\u2009'}}}}}},
-        'T': {'a': {'b': {';': '\t'}}}
+        't': {'h': {'i': {'n': {'s': {'p': {';': '\u2009'}}}}}}
+        
     };
     // Ref: https://html.spec.whatwg.org/multipage/syntax.html#consume-a-character-reference
     var specialCharToken = [
@@ -175,18 +178,28 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
         /*\x98*/ '\u02DC', '\u2122', '\u0161', '\u203A', 
         /*\x9C*/ '\u0153', '\u009D', '\u017E', '\u0178'
     ];
-
+    var fromCodePoint = String.fromCodePoint ? String.fromCodePoint : function(codePoint) {
+        return String.fromCharCode(( (codePoint -= 0x10000) >> 10) + 0xD800, (codePoint % 0x400) + 0xDC00);
+    };
+    // the spec defines some invalid chars, 
+    //  - only some of those require \uFFFD replacement
+    //  - for others, return the corresponding character
     function getHtmlDecodedChar(codePoint) {
-        return (codePoint >= 0x80 && codePoint <= 0x9F) ? specialCharToken[codePoint - 0x80] 
+        return (codePoint >= 0x80 && codePoint <= 0x9F) ? specialCharToken[codePoint - 0x80]
             : (codePoint >= 0xD800 && codePoint <= 0xDFFF) || codePoint === 0 || codePoint > 0x10FFFF ? '\uFFFD'
             : codePoint <= 0xFFFF ? String.fromCharCode(codePoint) // BMP code point
             // Astral code point; split in surrogate halves
             // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
-            : String.fromCharCode(( (codePoint -= 0x10000) >> 10) + 0xD800, (codePoint % 0x400) + 0xDC00);
+            : fromCodePoint(codePoint);
     }
-
-    function htmlDecode(s, onOutputMatched, nullFreeInput) {
-        if (s === undefined || s === null) return '';
+    /*
+     * @param {string} s - An untrusted user input
+     * @param {boolean} skipNullReplacement - set to true only if string s has NO NULL characters (e.g., string is once html-decoded, or input stream pre-processing has taken place). Caution: When set, given &\x00#39;, it is not decoded, and as a result, IE can still dangerously decode it as '. Leave it unset to result in &\uFFFD#39;, that won't be decoded further by browsers)
+     * 
+     * @returns {string} The html decoded string (All numbered entities will be decoded. See trieNamedRef in source code for a supported list of named entities)
+     */
+    function htmlDecode(s, skipNullReplacement) {
+        if (s === undefined || s === null) { return ''; }
         s = s.toString();
 
         var c, lastIdx = 0, ampIdx = -1, bufIdx = -1, subTrie, output = '', state = 0, i = 0, len = s.length;
@@ -216,9 +229,9 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
                 }
 
             } else if (state === 2) {                   // # previously collected
-                if (c === 0x78 || c === 0x58) {         //   X or x collected, process as hex (state 3)
+                if (c === 0x78 || c === 0x58) {         //   X or x collected, process as hex (state 16)
                     state = 16;
-                } else if (c >= 0x30 && c <= 0x39) {    //   digits collected, process as dec (state 4)
+                } else if (c >= 0x30 && c <= 0x39) {    //   digits collected, process as dec (state 10)
                     state = 10;
                     bufIdx = i;
                 } else {
@@ -235,8 +248,7 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
                     }
                 } else {
                     if (bufIdx > 0) {                   //   non-digits char encountered
-                        output += s.slice(lastIdx, ampIdx) + getHtmlDecodedChar(parseInt(s.slice(bufIdx, i), 16));
-                        if (onOutputMatched && onOutputMatched(c, output)) return output;
+                        output += s.slice(lastIdx, ampIdx) + getHtmlDecodedChar(parseInt(s.slice(bufIdx, i), state));
                         // consume one more char if the current one is semicolon
                         lastIdx = c === 0x3B ? i + 1 : i;
                     }
@@ -248,7 +260,6 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
                     // bufIdx is set before entering state 10
                 } else if (bufIdx > 0) {
                     output += s.slice(lastIdx, ampIdx) + getHtmlDecodedChar(parseInt(s.slice(bufIdx, i)));
-                    if (onOutputMatched && onOutputMatched(c, output)) return output;
                     lastIdx = c === 0x3B ? i + 1 : i;
                     state = -1;
                 }
@@ -261,9 +272,8 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
                 if ((subTrie = subTrie[s[i]])) {
                     if (typeof subTrie === 'string') {
                         output += s.slice(lastIdx, ampIdx) + subTrie;
-                        if (onOutputMatched && onOutputMatched(c, output)) return output;
                         // when the last hit char is not semicolon, consume the next semicolon, if any
-                        c !== 0x3B && s.charCodeAt(i+1) === 0x3B && i++;
+                        if (c !== 0x3B && s.charCodeAt(i+1) === 0x3B) { i++; }
                         lastIdx = i + 1;
                         state = -1;
                     }
@@ -285,27 +295,25 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
                     ampIdx = bufIdx = -1;
                 }
             }
+            
             // replace Null with \uFFFD
-            if (!nullFreeInput && c === 0) {
+            if (!skipNullReplacement && c === 0) {
                 output += s.slice(lastIdx, i) + '\uFFFD';
-                if (onOutputMatched && onOutputMatched(0xFFFD, output)) return output;
                 lastIdx = i + 1;
             }
-            
+        
             i++;
         }
 
-        if (lastIdx === 0) {
-            output = s;
-        } else if ((state === 16 || state === 10) && bufIdx > 0) {
-            // flash any collected numbered references
-            output += s.slice(lastIdx, ampIdx) + getHtmlDecodedChar(parseInt(s.slice(bufIdx, i), state));
-        } else {
-            output += s.slice(lastIdx);
+        // flash any collected numbered references
+        if ((state === 16 || state === 10) && bufIdx > 0) {
+            return output + s.slice(lastIdx, ampIdx) + getHtmlDecodedChar(parseInt(s.slice(bufIdx, i), state));
         }
-        onOutputMatched && onOutputMatched(null, output);
-        return output;
+
+        return lastIdx === 0 ? s : output + s.slice(lastIdx);
     }
+
+
     function htmlDecode2(s, namedRefMap, reNamedRef, skipReplacement) {
         
         namedRefMap = namedRefMap || SENSITIVE_NAMED_REF_MAP;
@@ -389,7 +397,7 @@ var sample3 = ["https://www.flickr.com","/signup","/explore","/explore","/common
         URL_REL = /^[\x00-\x20]*(?![\/\\]{2}|[a-zA-Z][a-zA-Z0-9+-.\t\n\r]*:)/,
         URL_WHITESPACES = /[\t\n\r]+/g,
         // URL_PROTO2 = /^[\x00-\x20]*([a-zA-Z][a-zA-Z0-9+-.\t\n\r]*):/,
-        URL_PROTO = /^([\x00-\x20&#a-zA-Z0-9;+-.]*:?)/,
+        URI_PROTOCOL_ENCODED = /^([\x00-\x20&#a-zA-Z0-9;+-.]*:?)/,
         URL_PROTO3 = /^[\x01-\x20]*([a-zA-Z][a-zA-Z0-9+-.\t\n\r]*):/;
 
 function getProtocolUnsafe(str) {
@@ -414,26 +422,42 @@ function getProtocol3(str) {
     return m ? m[1].replace(URL_WHITESPACES, '').toLowerCase() : m;
 }
 
-function getProtocol4(str) {
-    var m = str.match(URL_PROTO), i;
+function getProtocol4(str, skipHtmlDecoding) {
+    var m = skipHtmlDecoding || str.match(URI_PROTOCOL_ENCODED), i;
     if (m) {
-        str = htmlDecode(m[1]);
+        if (!skipHtmlDecoding) {
+            // getProtocol() must run a greedy html decode algorithm, i.e., omit all NULLs before decoding (as in IE)
+            // hence, \x00javascript:, &\x00#20;javascript:, and java\x00script: can all return javascript
+            // and since all NULL is replaced with '', we can set skipNullReplacement in htmlDecode()
+            str = htmlDecode(m[1].replace(NULL, ''), true);
+        }
         i = str.indexOf(':');
-        return i === -1 ? null : str.slice(0, i).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+        if (i !== -1) {
+            return str.slice(0, i).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+        }
     }
-    return m;
+    return null;
 }
-function getProtocol4Fast(str) {
-    var m = str.match(URL_PROTO), i;
+    
+function getProtocol4Fast(str, skipHtmlDecoding) {
+    var m = skipHtmlDecoding || str.match(URI_PROTOCOL_ENCODED), i;
     if (m) {
-        m = htmlDecode(m[1]).split(':', 2);
-        m.length === 2 ? m[0].replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase() : null;
+        if (!skipHtmlDecoding) {
+            // getProtocol() must run a greedy html decode algorithm, i.e., omit all NULLs before decoding (as in IE)
+            // hence, \x00javascript:, &\x00#20;javascript:, and java\x00script: can all return javascript
+            // and since all NULL is replaced with '', we can set skipNullReplacement in htmlDecode()
+            str = htmlDecode(m[1].replace(NULL, ''), true);
+        }
+        m = str.split(':', 2);
+        if (m.length === 2) {
+            return m[0].replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+        }
     }
-    return m;
+    return null;
 
 
     /*
-    var m = str.match(URL_PROTO), i;
+    var m = str.match(URI_PROTOCOL_ENCODED), i;
     if (m) {
 
         htmlDecode(str, function(charCode, output){
@@ -455,33 +479,40 @@ function getProtocol4Fast(str) {
     */
 }
 
-function getProtocol4b(str) {
-    var m = str.match(URL_PROTO), i;
+function getProtocol4b(str, skipHtmlDecoding) {
+    var m = skipHtmlDecoding || str.match(URI_PROTOCOL_ENCODED), i;
     if (m) {
-        str = htmlDecode2(m[1]);
+        if (!skipHtmlDecoding) {
+            // getProtocol() must run a greedy html decode algorithm, i.e., omit all NULLs before decoding (as in IE)
+            // hence, \x00javascript:, &\x00#20;javascript:, and java\x00script: can all return javascript
+            // and since all NULL is replaced with '', we can set skipNullReplacement in htmlDecode()
+            str = htmlDecode2(m[1].replace(NULL, ''));
+        }
         i = str.indexOf(':');
-        return i === -1 ? null : str.slice(0, i).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+        if (i !== -1) {
+            return str.slice(0, i).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+        }
     }
-    return m;
+    return null;
 }
 
-function searchProtocolFast(str) {
+// function searchProtocolFast(str) {
 
-    htmlDecode(str, function(charCode, output){
-        if (charCode === null) {
-            var i = output.indexOf(':');
-            if (i === -1) return false;
-            output.slice(0, i).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
-        }
-        else if (charCode === 58) { // :
-            // check
-            output.replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+//     htmlDecode(str, function(charCode, output){
+//         if (charCode === null) {
+//             var i = output.indexOf(':');
+//             if (i === -1) return false;
+//             output.slice(0, i).replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
+//         }
+//         else if (charCode === 58) { // :
+//             // check
+//             output.replace(URI_PROTOCOL_WHITESPACES, '').toLowerCase();
 
-            return true;
-        }
-        return false;
-    });
-}
+//             return true;
+//         }
+//         return false;
+//     });
+// }
 
 console.log(sample1[1], JSON.stringify(htmlDecode(sample1[1])), JSON.stringify(getProtocol3(sample1[1])), JSON.stringify(getProtocol4(sample1[1])));
 // console.log(sample1[1], JSON.stringify(htmlDecode(sample1[1])), getProtocol2(sample1[1]));
@@ -495,10 +526,12 @@ suite
 // })
 .add('using htmlDecode old', function() {
     sample1.filter(function(s) {return htmlDecode2(s)});
+    sample2.filter(function(s) {return htmlDecode2(s)});
     sample3.filter(function(s) {return htmlDecode2(s)});
 })
 .add('using htmlDecode new', function() {
     sample1.filter(function(s) {return htmlDecode(s)});
+    sample2.filter(function(s) {return htmlDecode(s)});
     sample3.filter(function(s) {return htmlDecode(s)});
 })
 
@@ -514,7 +547,7 @@ suite
     sample1.filter(getProtocol3);
     sample2.filter(getProtocol3);
 })
-.add('using getProtocol new (greedy match first, then decode and match)', function() {
+.add('using getProtocol new fastest', function() {
     sample1.filter(getProtocol4);
     sample2.filter(getProtocol4);
 })
@@ -522,14 +555,14 @@ suite
     sample1.filter(getProtocol4b);
     sample2.filter(getProtocol4b);
 })
-.add('using searchProtocol 1', function() {
-    sample1.filter(searchProtocolFast);
-    sample2.filter(searchProtocolFast);
-})
-.add('using searchProtocol 2 (greedy match first, then decode and match)', function() {
-    sample1.filter(getProtocol4Fast);
-    sample2.filter(getProtocol4Fast);
-})
+// .add('using searchProtocol 1', function() {
+//     sample1.filter(searchProtocolFast);
+//     sample2.filter(searchProtocolFast);
+// })
+// .add('using searchProtocol 2 (greedy match first, then decode and match)', function() {
+//     sample1.filter(getProtocol4Fast);
+//     sample2.filter(getProtocol4Fast);
+// })
 
 .add('legit samples | using getProtocol old', function() {
     sample3.filter(getProtocol1);
@@ -540,18 +573,18 @@ suite
 .add('legit samples | using getProtocol new (decode first, then match)', function() {
     sample3.filter(getProtocol3);
 })
-.add('legit samples | using getProtocol new (greedy match first, then decode and match)', function() {
+.add('legit samples | using getProtocol new fastest', function() {
     sample3.filter(getProtocol4);
 })
 .add('legit samples | using getProtocol new (greedy match first, then decode and match) w/old decoder', function() {
     sample3.filter(getProtocol4b);
 })
-.add('legit samples | using searchProtocol 1', function() {
-    sample3.filter(searchProtocolFast);
-})
-.add('legit samples | using searchProtocol 2 (greedy match first, then decode and match)', function() {
-    sample3.filter(getProtocol4Fast);
-})
+// .add('legit samples | using searchProtocol 1', function() {
+//     sample3.filter(searchProtocolFast);
+// })
+// .add('legit samples | using searchProtocol 2 (greedy match first, then decode and match)', function() {
+//     sample3.filter(getProtocol4Fast);
+// })
 
 // add listeners
 .on('cycle', function(event) {
