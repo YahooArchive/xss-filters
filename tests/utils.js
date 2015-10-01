@@ -167,7 +167,9 @@ exports.test_yubl = function (filter, expectedResults) {
         'x-&#02&#x0D;&#11javascript:alert(1)',
 
         'x-vbscript&colon;',
-        'x-&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
+        // Given &#0;, it will not be decoded in IE 9 or below, while \uFFFD is resulted in IE10+/Chrome/Firefox. 
+        // in either browser camp, vbscript&#0;: and vbscript\uFFFD: are both non-scriptable protocol
+        '&Tab;&#X0a;&NewLine;v&#98scripT&#0;:',
 
         'https://www.yahoo.com',
         'http://www.yahoo.com',
