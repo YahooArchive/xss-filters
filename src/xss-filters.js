@@ -253,53 +253,88 @@ exports._getPrivFilters = function () {
     }
 
     /* 
+     * Format Exception Object for yuwl
+     * @param {string} value - the element that violates the format
+     */
+    function yuwlException(value) {
+        this.value = value;
+        this.message = 'does not conform to the expected format';
+        this.toString = function() {
+          return this.value + this.message;
+        };
+    }
+    /* 
      * Create URL whitelist filter
      * Ref: https://url.spec.whatwg.org/#url-parsing
-     * @param {boolean} allowAllSafeURIs - to enable inherited protocol (//), blob:, http://, https://, ftp://, "data:image/[gif,jpeg,png];base64," are allowed
-     * @param {boolean} allowInheritProto - to enable inherited protocol (//), or otherwise, only http:// and https:// are allowed
-     * @param {boolean} allowRelPath - to allow relative path
-     * @param {boolean} allowHosts - an optional array of hostnames that each matches /^[\w\.-]+$/. If any one is found unmatched, return null
-     * @param {boolean} reqHtmlDecode - to run html decoding first before applying the tests
+     * @param {object} options allow configurations as follows
+     *  {array} protocols - an optional array of protocols, if not provided, only http:// and https:// are allowed
+     *  {boolean} inheritProto - to also enable inherited protocol (//)
+     *  {array} hosts - an optional array of hostnames that each matches /^[\w\.-]+$/. If any one is found unmatched, return null
+     *  {boolean} subdomain - to enable subdomain matching of the allowHosts
+     *  {boolean} relPath - to allow relative path
+     *  {boolean} htmlDecode - to run html decoding first before applying the tests
      * @returns {function|null} the yuwl filter that tests value according to the config
      */
-    function yuwlFactory (allowAllSafeURIs, allowInheritProto, allowRelPath, allowHosts, reqHtmlDecode) {
-        var i, n, reHost, reHosts,
-            reProto = allowAllSafeURIs ? 
-                        /^[\x00-\x20]*(?:(?:(blob:)?https?|ftp):\/\/|data:image\/(?:gif|jpe?g|png);base64,|\/\/)/i :
-                        allowInheritProto ? 
-                            /^[\x00-\x20]*(?:https?:\/\/|\/\/)/i :
-                            /^[\x00-\x20]*https?:\/\//i,
-            reRelPath = allowRelPath && /^[\x00-\x20]*(?![a-z][a-z0-9+-.]*:|[\/\\]{2})/i;
+    function yuwlFactory (options) {
+        /*jshint -W030 */
+        options || (options = {});
 
-        // create reHosts from the hostList array, that is case insensitive
-        // reHosts is defined as must start with either of the allowed hosts, and 
-        //   followed by either nothing (i.e., end of string), or / ? # \
-        // return null if there exists an host not fullfilling the regexp /^[\w\.-]+$/ 
-        if (allowHosts) {
-            reHost = /^[\w\.-]+$/;
-            for (i = 0, n = allowHosts.length; i < n; i++) {
-                if (!reHost.test(allowHosts[i])) {
-                    return null;
+        var i, n, arr, reElement, reProtos, reHosts,
+            reRelPath = options.relPath && /^[\x00-\x20]*(?![a-z][a-z0-9+-.]*:|[\/\\]{2})/i;
+
+        // create reProtos from the hosts array, that is case insensitive
+        // throw yuwlException if any of its element does not conform to the regexp /^[a-z0-9-]+$/i 
+        if ((arr = options.protocols) && (n = arr.length)) {
+            reElement = /^[a-z0-9-]+$/i;
+            for (i = 0; i < n; i++) {
+                if (!reElement.test(arr[i])) {
+                    throw new yuwlException(arr[i]);
                 }
             }
-            reHosts = new RegExp('^(?:' + 
-                allowHosts.join('|').replace(/\./g, '\\.') + 
+
+            reProtos = new RegExp(
+                '^[\\x00-\\x20]*(?:(?:' +
+                arr.join('|') +
+                (options.inheritProto ? '):\\/\\/|\\/\\/)' : ':\\/\\/))'), 'i');
+
+        } else {
+            // reProtos = options.allowAllSafeURIs ? 
+            //             /^[\x00-\x20]*(?:(?:(blob:)?https?|ftp):\/\/|data:image\/(?:gif|jpe?g|png);base64,|\/\/)/i :
+            reProtos = options.inheritProto ? 
+                        /^[\x00-\x20]*(?:https?:\/\/|\/\/)/i :
+                        /^[\x00-\x20]*https?:\/\//i;
+        }
+
+        // create reHosts from the hosts array, that is case insensitive
+        // throw yuwlException if any of its element does not conform to the regexp /^[\w\.-]+$/ 
+        if ((arr = options.hosts) && (n = arr.length)) {
+            reElement = /^[\w\.-]+$/;
+            for (i = 0; i < n; i++) {
+                if (!reElement.test(arr[i])) {
+                    throw new yuwlException(arr[i]);
+                }
+            }
+
+            reHosts = new RegExp(
+                (options.subdomain ? '^(?:[\\w-]+\\.)*(?:' : '^(?:') +
+                arr.join('|').replace(/\./g, '\\.') + 
                 ')(?:$|[\\/?#\\\\])', 'i');
+
         }
 
         return function(url) {
-            if (reqHtmlDecode) {
+            if (options.htmlDecode) {
                 url = htmlDecode(url);
             }
             // either its a relativeURL, or 
             // its protocol is allowed, and no host restrictions, or 
             // its protocol and host is both allowed
-            if ((allowRelPath && reRelPath.test(url)) || 
-                ((result = reProto.exec(url)) !== null && 
+            if ((options.relPath && reRelPath.test(url)) || 
+                ((result = reProtos.exec(url)) !== null && 
                     (!reHosts || (reHosts && reHosts.test(url.slice(result[0].length)))))) {
                 return url;
             }
-            return 'x-' + url;
+            return 'unsafe:' + url;
         };
     }
     
