@@ -6,8 +6,8 @@
 <body>
 <h1 style="padding:40px 110px;margin:0;background:url(logo.jpg) no-repeat">Fuzzing browser with chars := [0, 65535]</h1>
 <p>One-liner Introduction: Test how chars will actually perform in real browsers!</p>
-<form onsubmit="delayedTest();return false">
-<textarea id="input" style="width:500px;height:200px">
+<form id="form" onsubmit="delayedTest(this.input.value);return false">
+<textarea name="input" id="input" style="width:500px;height:200px">
 <{{chr}}img onerror=&quot;log('BeforeTag{{num}}')&quot; src=x>
 <im{{chr}}g onerror=&quot;log('InTag{{num}}')&quot; src=x>
 <img{{chr}}onerror=&quot;log('BeforeAttrName{{num}}')&quot; src=x>
@@ -17,8 +17,14 @@
 <img src=x{{chr}}onerror=&quot;log('AfterAttrVal{{num}}')&quot;>
 </textarea>
 <select multiple id="log" style="width:200px;height:200px"></select>
-<input type="submit"></input>
+<p style="color:red">Disclaimer: Do not click "Fuzz" unless you're sure this is an XSS attack, and could potentially steal your sensitive information!</p>
+<div>
+<input type="submit" value=" Fuzz " style="color:red">
+<input type="button" value="Share" onclick="share(this.form.input.value)">
+</div>
+<br>
 </form>
+
 
 <div id="iframes"></div>
 
@@ -29,30 +35,43 @@ function log(msg) {
 	opt.text = msg;
 	document.getElementById('log').add(opt);
 }
-function test(start, end) {
-	var c, f, iframes = document.getElementById('iframes'), i = document.getElementById('input').value;
+function test(inputVal, start, end) {
+	var c, f, iframes = document.getElementById('iframes');
 	iframes.innerHTML = '';
 
 	for (c = start; c < end; c++) {
 		f = document.createElement('iframe');
 		iframes.appendChild(f);
 		f.contentWindow.document.write('<script>function log(i){parent.log(i)}<' + '/script>testing ' + c + 
-			i.replace(/{{chr}}/g, String.fromCharCode(c)).replace(/{{num}}/g, c));
+			inputVal.replace(/{{chr}}/g, String.fromCharCode(c)).replace(/{{num}}/g, c));
 	}
 }
-function delayedTest() {
+function share(inputVal) {
+	window.location.hash = '#' + encodeURIComponent(inputVal);
+	alert(window.location);
+}
+function delayedTest(inputVal) {
 	for (var i = 0; i < 65536; i+=8) {
 		(function(i){
-			window.setTimeout(function(){ test(i, i+8); }, i * 200);
+			window.setTimeout(function(){ test(inputVal, i, i+8); }, i * 200);
 		})(i);
 	}
 	window.setTimeout(function(){alert('done')}, i * 200);
 }
+
+(function(){
+// load the inputVal from hash if exists
+var hash = window.location.hash;
+if (hash.length < 2) { return; }
+document.getElementById('input').value = decodeURIComponent(hash.slice(1));
+})();
+
 </script>
 <footer>
+<p>
 Authored by <a href="mailto:adon@yahoo-inc.com">Adonis Fung</a>. This software is free to use under the Yahoo BSD license. 
 <br>See the <a href="https://github.com/yahoo/xss-filters/blob/master/LICENSE">LICENSE</a> file for license text and copyright information.
-<br>
+</p>
 <a href="https://policies.yahoo.com/us/en/yahoo/privacy/index.htm" target="_blank">Privacy</a> |
 <a href="https://policies.yahoo.com/us/en/yahoo/terms/utos/index.htm" target="_blank">Legal</a>
 </footer>
