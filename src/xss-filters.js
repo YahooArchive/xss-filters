@@ -49,7 +49,7 @@ exports._getPrivFilters = function () {
     // Reference: http://shazzer.co.uk/database/All/Characters-after-javascript-uri
     // Reference: https://html.spec.whatwg.org/multipage/syntax.html#consume-a-character-reference
     // Reference for named characters: https://html.spec.whatwg.org/multipage/entities.json
-    var URI_BLACKLIST_PROTOCOLS = {'javascript':1, 'data':1, 'vbscript':1, 'mhtml':1, 'x-schema':1},
+    var URI_BLACKLIST_PROTOCOLS = {'javascript':1, 'data':1, 'vbscript':1, 'mhtml':1, 'x-schema':1, 'file':1},
         URI_PROTOCOL_WHITESPACES = /(?:^[\x00-\x20]+|[\t\n\r\x00]+)/g,
         URI_PROTOCOL_ENCODED = /^([\x00-\x20&#a-zA-Z0-9;+-.]*:?)/;
 
@@ -252,88 +252,255 @@ exports._getPrivFilters = function () {
         return null;
     }
 
-    /* 
-     * Format Exception Object for yuwl
-     * @param {string} value - the element that violates the format
+    /**
+     * This is what a urlFilterFactoryAbsCallback would expect
+     *
+     * @callback urlFilterFactoryAbsCallback
+     * @param {string} url
+     * @param {string|undefined} protocol - relative scheme is indicated as undefined. no trailing colon
+     * @param {string|undefined} authority - no trailing @ if exists. username & password both included. no percent-decoding
+     * @param {string} host - no percent-decoding
+     * @param {string|undefined} port - no leading colon. no percent-decoding 
+     * @param extraArg - an optional argument supplied thru the returned urlFilterFactory callback
+     * @returns the url, or anything of one's choice
      */
-    function yuwlException(value) {
-        this.value = value;
-        this.message = 'does not conform to the expected format';
-        this.toString = function() {
-          return this.value + this.message;
-        };
-    }
-    /* 
-     * Create URL whitelist filter
-     * Ref: https://url.spec.whatwg.org/#url-parsing
-     * @param {object} options allow configurations as follows
-     *  {array} protocols - an optional array of protocols, if not provided, only http:// and https:// are allowed
-     *  {boolean} inheritProto - to also enable inherited protocol (//)
-     *  {array} hosts - an optional array of hostnames that each matches /^[\w\.-]+$/. If any one is found unmatched, return null
-     *  {boolean} subdomain - to enable subdomain matching of the allowHosts
-     *  {boolean} relPath - to allow relative path
-     *  {boolean} htmlDecode - to run html decoding first before applying the tests
-     * @returns {function|null} the yuwl filter that tests value according to the config
+
+    /**
+     * This is what a urlFilterFactoryRelCallback would expect
+     *
+     * @callback urlFilterFactoryRelCallback
+     * @param {string} url
+     * @param  extraArg - an optional argument supplied thru the returned urlFilterFactory callback
+     * @returns the url, or anything of one's choice
      */
-    function yuwlFactory (options) {
+
+    /* 
+     * urlFilterFactory creates a URL whitelist filter, which largely observes 
+     *  the specification in https://url.spec.whatwg.org/#url-parsing. It is 
+     *  designed for matching whitelists of schemes and hosts, and will thus
+     *  parse only up to a sufficient position (i.e., faster for not requiring 
+     *  to parse the whole URL). 
+     *
+     * It simplifies the spec: base URL is null, utf-8 encoding, no state
+     *   override, no host parsing, no percent-decoding, no username and 
+     *   password parsing within the authority
+     * It adds to the spec: aligned w/browsers to accept \t\n\r within origin,
+     *   prohibited any scheme matching URI_BLACKLIST_PROTOCOLS, limited data 
+     *   URIs to be only some safe image types
+     * 
+     * @param {Object} options allow configurations as follows
+     * @param {Object[]} options.protocols - an optional array of protocols 
+     *   (no trailing colon). If not provided, only http and https are allowed
+     * @param {boolean} options.relScheme - to enable relative scheme (//)
+     * @param {Object[]} options.hosts - an optional array of hostnames that 
+     *   each matches /^[\w\.-]+$/. If any one is found unmatched, return null
+     * @param {boolean} options.subdomain - to enable subdomain matching for 
+     *   non-IPs specified in options.hosts
+     * @param {boolean} options.relPath - to allow relative path
+     * @param {boolean} options.relPathOnly - to allow relative path only
+     * @param {boolean} options.imgDataURIs - to allow data scheme with the 
+     *   MIME type equal to image/gif, image/jpeg, image/jpg, or image/png, and
+     *   the encoding format as base64
+     * @param {boolean} options.htmlDecode - to run html decoding first before
+     *   applying any tests and filtering
+     * @param {urlFilterFactoryAbsCallback} options.absCallback - if matched,
+     *   called to further process the url, protocol, host, port number, and an
+     *   extra argument supplied thru the returned callback to control what is
+     *   returned
+     * @param {urlFilterFactoryRelCallback} options.relCallback - if matched,
+     *   called to further process the url, and an extra argument supplied thru
+     *   the returned callback to control what is returned
+     * @returns {function} The returned function taking (url, extraArg) runs 
+     *   the configured tests. It prefixes "unsafe:" to non-matching URLs, and
+     *   handover to the options.absCallback and/or options.relCallback for
+     *   matched ones. In case no callback is supplied, return the matched url.
+     */
+    function urlFilterFactory (options) {
         /*jshint -W030 */
         options || (options = {});
 
-        var i, n, arr, reElement, reProtos, reHosts,
-            reRelPath = options.relPath && /^[\x00-\x20]*(?![a-z][a-z0-9+-.]*:|[\/\\]{2})/i;
+        var i, n, arr, t, reElement, reProtos, reAuthHostsPort, 
+            absCallback = options.absCallback,
+            // reEscape escapes chars that are sensitive to regexp
+            reEscape = /[.*?+\\\[\](){}|\^$]/g,
+            // the following whitespaces are allowed in origin
+            reOriginWhitespaces = /[\t\n\r]+/g,
+            // reIPv4 matches the pattern of IPv4 address and its hex representation
+            // used only when options.subdomain is set
+            // Ref: https://url.spec.whatwg.org/#concept-ipv4-parser
+            reIPv4 = options.subdomain && /^\.?(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?|0[xX][\dA-Fa-f]{1,2})\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?|0[xX][\dA-Fa-f]{1,2})\.?$/,
+            // reImgDataURIs hardcodes the image data URIs that are known to be safe
+            reImgDataURIs = options.imgDataURIs && /^(data):image\/(?:gif|jpe?g|png);base64,/i,
+            // reRelPath ensures the URL has no scheme/auth/host/port
+            // (?![a-z][a-z0-9+-.\t\n\r]*:) avoided going to the #scheme-state
+            //   \t\n\r can be part of scheme according to browsers' behavior
+            // (?![\/\\]{2}) avoided the transitions from #relative-state, 
+            //   to #relative-slash-state and then to 
+            //   #special-authority-ignore-slashes-state
+            // Ref: https://url.spec.whatwg.org/
+            reRelPath = options.relPath && /^(?![a-z][a-z0-9+-.\t\n\r]*:|[\/\\]{2})/i;
 
-        // create reProtos from the hosts array, that is case insensitive
-        // throw yuwlException if any of its element does not conform to the regexp /^[a-z0-9-]+$/i 
+        // if options.protocols are provided
+        // in any case, reProtos won't match a relative path
         if ((arr = options.protocols) && (n = arr.length)) {
-            reElement = /^[a-z0-9-]+$/i;
+            // reElement specifies the possible chars for scheme
+            // Ref: https://url.spec.whatwg.org/#scheme-state
+            reElement = /^[a-z0-9+-.]+$/i;
+
             for (i = 0; i < n; i++) {
-                if (!reElement.test(arr[i])) {
-                    throw new yuwlException(arr[i]);
+                // throw TypeError if an array element cannot be validated
+                if (!reElement.test( (t = arr[i]) )) {
+                    throw new TypeError(t + 'is an invalid scheme.');
                 }
+                if (URI_BLACKLIST_PROTOCOLS[ (t = t.toLowerCase()) ]) {
+                    throw new TypeError(t + 'is a disallowed scheme.' + 
+                        (t === 'data' ? 
+                            ' Enable safe image types \\w/options.imgDataURIs':
+                            ''));
+                }
+                // escapes t from regexp sensitive chars
+                arr[i] = t.replace(reEscape, '\\$&');
             }
 
+            // build reProtos from the protocols array, must be case insensitive
+            // The relScheme matching regarding \\/\\/ summarized the transitions from 
+            //   #relative-state, #relative-slash-state to #special-authority-ignore-slashes-state
+            // Ref: https://url.spec.whatwg.org/
             reProtos = new RegExp(
-                '^[\\x00-\\x20]*(?:(?:' +
+                '^(?:(' +
                 arr.join('|') +
-                (options.inheritProto ? '):\\/\\/|\\/\\/)' : ':\\/\\/))'), 'i');
+                (options.relScheme ? '):|\\/\\/)' : '):)'), 'i');
 
         } else {
-            // reProtos = options.allowAllSafeURIs ? 
-            //             /^[\x00-\x20]*(?:(?:(blob:)?https?|ftp):\/\/|data:image\/(?:gif|jpe?g|png);base64,|\/\/)/i :
-            reProtos = options.inheritProto ? 
-                        /^[\x00-\x20]*(?:https?:\/\/|\/\/)/i :
-                        /^[\x00-\x20]*https?:\/\//i;
+            // the default reProtos, only http and https are allowed. 
+            // refer to above for regexp explanations
+            reProtos = options.relScheme ? /^(?:(https?):|\/\/)/i : /^(https?):/i;
         }
 
-        // create reHosts from the hosts array, that is case insensitive
-        // throw yuwlException if any of its element does not conform to the regexp /^[\w\.-]+$/ 
+        // if options.hosts are provided
         if ((arr = options.hosts) && (n = arr.length)) {
-            reElement = /^[\w\.-]+$/;
+            // [^\x00\t\n\r#\/:?\[\\\]]+ tests a valid host 
+            //   - @ won't appear here anyway as it's captured by prior regexp
+            //   - \x20 is found okay to browser, so it's also allowed here
+            //   - \t\n\r are not allowed, developers should stripped them
+            //   Ref: https://url.spec.whatwg.org/#concept-host-parser
+            // \[(?:[^\t\n\r\/?#\\]+)\] is minimal to capture ipv6-like address
+            //   Ref: https://url.spec.whatwg.org/#concept-ipv6-parser
+            reElement = /^(?:[^\x00\t\n\r#\/:?\[\]\\]+|\[(?:[^\x00\t\n\r\/?#\\]+)\])$/;
+
             for (i = 0; i < n; i++) {
-                if (!reElement.test(arr[i])) {
-                    throw new yuwlException(arr[i]);
+                // throw TypeError if an array element cannot be validated
+                if (!reElement.test( (t = arr[i]) )) {
+                    throw new TypeError(t + 'is an invalid host.');
                 }
+                
+                // if the host provided is neither IPv6 nor IPv4
+                arr[i] = (options.subdomain && 
+                        t.charCodeAt(0) !== 91 /*[*/ && !reIPv4.test(t)) ?
+                            // See above for valid host requirement
+                            // accept \t\n\r, which will be later stripped
+                            '(?:[^\\x00#\\/:?\\[\\]\\\\]+\\.)*' : 
+                            '';
+
+                // escapes t from regexp sensitive chars
+                arr[i] += t.replace(reEscape, '\\$&');
             }
 
-            reHosts = new RegExp(
-                (options.subdomain ? '^(?:[\\w-]+\\.)*(?:' : '^(?:') +
-                arr.join('|').replace(/\./g, '\\.') + 
-                ')(?:$|[\\/?#\\\\])', 'i');
-
+            // build reAuthHostsPort from the hosts array, must be case insensitive
+            // in general, host must be present, auth/port optional
+            // ^[\\/\\\\]* actually is there to ignore any number of leading slashes. 
+            //   This observes the spec except when there're >2 slashes after scheme,
+            //   only syntax violation is specified So, follow browsers' behavior to continue parsing
+            //   Ref: https://url.spec.whatwg.org/#special-authority-ignore-slashes-state
+            // (?:([^\\/\\\\?#]*)@)? captures the authority without the trailing @ (i.e., username:password) if any
+            //   This observes the spec except omitting any encoding/separating username and password
+            //   Ref: https://url.spec.whatwg.org/#authority-state
+            // '(' + arr.join('|') + ')' is to capture the whitelisted hosts
+            //   Refer to above for the requirements
+            // (?:$|OPTIONAL_PORT_SEE_BELOW($|[\\/?#\\\\])) required for host array
+            //   [\\/?#\\\\] is delimeter to separate host from path, required
+            //   to capture the whole host for matching elmement in hosts array
+            //   Ref: https://url.spec.whatwg.org/#host-state
+            // (?::([\\d\\t\\n\\r]*))? captures the port number if any
+            //   whitespaces to be later stripped
+            //   Ref: https://url.spec.whatwg.org/#port-state
+            reAuthHostsPort = new RegExp(
+                '^[\\/\\\\]*(?:([^\\/\\\\?#]*)@)?' +            // leading slashes and authority
+                '(' + arr.join('|') + ')' +                     // allowed hosts, in regexp
+                '(?:$|(?::([\\d\\t\\n\\r]*))?($|[\\/?#\\\\]))', // until EOF, an optional port or a delimeter
+                'i');                                           // case insensitive required for hosts
+        }
+        // extract the auth, host and port number if options.absCallback is supplied
+        else if (absCallback) {
+            // the default reAuthHostsPort. see above for details
+            //   host must be present, auth/port optional
+            //   accept \t\n\r, which will be later stripped
+            //   EXCEPT: no delimeter detection as host regex here will match everything
+            reAuthHostsPort = /^[\/\\]*(?:([^\/\\?#]*)@)?([^\x00#\/:?\[\]\\]+|\[(?:[^\x00\/?#\\]+)\])(?::([\d\t\n\r]*))?/;
         }
 
-        return function(url) {
+        /*
+         * @param {string} url 
+         * @param extraArg - an optional extra argument for the callback
+         * @returns {string|} the url - the url itself, or prefixed with 
+         *   "unsafe:" if it fails the tests. In case absCallback/relCallback
+         *   is supplied, the output is controled by the callback for those 
+         *   urls that pass the tests.
+         */
+        return function(url, extraArg) {
+            var protocol, authHostPort, i = 0, charCode, urlTemp;
+
             if (options.htmlDecode) {
                 url = htmlDecode(url);
             }
-            // either its a relativeURL, or 
-            // its protocol is allowed, and no host restrictions, or 
-            // its protocol and host is both allowed
-            if ((options.relPath && reRelPath.test(url)) || 
-                ((result = reProtos.exec(url)) !== null && 
-                    (!reHosts || (reHosts && reHosts.test(url.slice(result[0].length)))))) {
-                return url;
+            
+            // remove leading whitespaces (don't care the trailing whitespaces)
+            // Ref: #1 in https://url.spec.whatwg.org/#concept-basic-url-parser 
+            while ((charCode = url.charCodeAt(i)) >= 0 && charCode <= 32) { i++; }
+            i > 0 && (url = url.slice(i));
+
+            // options.relPathOnly will bypass any check on protocol
+            if (options.relPathOnly) {
+                return reRelPath.test(url) ? 
+                    (options.relCallback ? options.relCallback(url, extraArg) : url) :
+                    'unsafe' + url;
             }
+
+            // reRelPath ensures no scheme/auth/host/port
+            if (options.relPath && reRelPath.test(url)) {
+                return options.relCallback ? 
+                    options.relCallback(url, extraArg) : 
+                    url;
+            }
+
+            // match the protocol, could be from a safe image Data URI
+            if ((protocol = reProtos.exec(url) || 
+                    reImgDataURIs && reImgDataURIs.exec(url))) {
+                
+                // either there's no auth/host/port restrictions
+                if (!reAuthHostsPort) { return url; }
+
+                // get the remaining url for further matching
+                urlTemp = url.slice(protocol[0].length);
+                // or auth, host and port are properly validated
+                if ((authHostPort = reAuthHostsPort.exec(urlTemp))) {
+                    return absCallback ? 
+                            absCallback(url, 
+                                // protocol captured using whitelist matching
+                                // no reOriginWhitespaces treatment needed
+                                protocol[1], 
+                                // spec says whitespaces are syntax violation
+                                // stripping them follows browsers' behavior
+                                authHostPort[1] && authHostPort[1].replace(reOriginWhitespaces, ''), 
+                                authHostPort[2].replace(reOriginWhitespaces, ''), 
+                                authHostPort[3] && authHostPort[3].replace(reOriginWhitespaces, ''), 
+                                // minus the captured delimeter if existed
+                                urlTemp.slice(authHostPort[0].length - (authHostPort[4] ? 1 : 0)), 
+                                extraArg) : 
+                            url;
+                }
+            }
+
             return 'unsafe:' + url;
         };
     }
@@ -356,8 +523,7 @@ exports._getPrivFilters = function () {
     }
 
     return (x = {
-        yuwl: null,
-        yuwlFactory: yuwlFactory,
+        urlFilterFactory: urlFilterFactory,
         yHtmlDecode: htmlDecode,
         /*
          * @param {string} s - An untrusted uri input

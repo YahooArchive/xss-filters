@@ -11,7 +11,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
     var filter = xssFilters;
 
-    delete filter._privFilters;
+    // delete filter._privFilters;
     delete filter._getPrivFilters;
 
     describe("xss-filters: existence tests", function() {
@@ -147,8 +147,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     describe("xss-filters: error tests", function() {
 
         it('filters handling of undefined input', function() {
-            for (var f in filter)
+            for (var f in filter) {
+                f !== '_privFilters' &&
                 expect(filter[f]()).to.eql('undefined');
+            }
         });
     });
 

@@ -17,3 +17,5 @@ testutils = require('./utils.js');
 
 require('./unit/private-xss-filters.js');
 require('./unit/xss-filters.js');
+require('./unit/url-filter-basics.js');
+require('./unit/url-filter-with-warnings.js');
