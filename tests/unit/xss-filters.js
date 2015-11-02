@@ -11,9 +11,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
     var filter = xssFilters;
 
-    // delete filter._privFilters;
-    delete filter._getPrivFilters;
-
     describe("xss-filters: existence tests", function() {
 
         it('filter inHTMLData exists', function() {
@@ -116,6 +113,18 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.uriFragmentInHTMLComment).to.be.ok();
         });
 
+        
+        it('_getPrivFilters functioning', function() {
+            // _getPrivFilters is visible only for nodejs version,
+            // and is larged designed for secure-handlebars-helpers
+            if (filter._getPrivFilters) {
+                var f = eval(filter._getPrivFilters.toString() + '()');
+                ['yd', 'yc', 'yavd', 'yavs', 'yavu', 'yu', 'yuc', 'yubl', 'yufull', 'yceu', 'yced', 'yces', 'yceuu', 'yceud', 'yceus'].forEach(function(exposed){
+                    expect(f[exposed]).to.be.ok();
+                });
+            }
+        });
+
     });
 
     describe("xss-filters: alias tests", function() {
@@ -148,7 +157,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('filters handling of undefined input', function() {
             for (var f in filter) {
-                f !== '_privFilters' &&
+                f !== '_privFilters' && f !== '_getPrivFilters' && f !== 'urlFilters' &&
                 expect(filter[f]()).to.eql('undefined');
             }
         });

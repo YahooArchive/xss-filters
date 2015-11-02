@@ -9,7 +9,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 */
 (function() {
 
-    var urlFilterFactory = xssFilters._privFilters.urlFilterFactory;
+    var urlFilterFactory = xssFilters.urlFilters.yUrlFilterFactory;
 
     var YUWL_WARN_HOST_NUMERIC = 1,
         YUWL_WARN_HOST_LOCAL = 2,
@@ -20,13 +20,13 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     var reNumericHost = /^\.?(?:(?:0x[0-9a-f]*|[0-9]+)\.?)*$/i;
 
     var advConfig = {
-        protocols: ['http', 'https', 'mailto', 'cid'], 
+        schemes: ['http', 'https', 'mailto', 'cid'], 
         relScheme: true,
         imgDataURIs: true, 
         absCallback: function(url, protocol, authority, host, port, path) {
-            var httpProtocol = protocol === 'https' ? 1 : protocol === 'http' ? 2 : 0;
+            var httpProtocol = protocol === 'https:' ? 1 : protocol === 'http:' ? 2 : 0;
 
-            if (port && ((httpProtocol === 1 && port !== '443') || (httpProtocol === 2 && port !== '80'))) {
+            if (port) {
                 return YUWL_WARN_PORT_UNCOMMON;
             }
 
@@ -47,7 +47,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         }
     };
 
-    describe("urlFilterFactory with warnings tests", function() {
+    describe("urlFilterFactory: output tests", function() {
         var yuwl = urlFilterFactory(advConfig);
 
         it('positive protocol samples', function() {
@@ -128,7 +128,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             });
         });
 
-        it('negative absCallback samples - numeric hosts', function() {
+        it('negative absCallback samples - numeric hostnames', function() {
             [
                 "http://127.0.0.1",                 // dangerous link
                 "http://127.0.0.1/foo",             // dangerous link
@@ -153,7 +153,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             });
         });
 
-        it('negative absCallback samples - dubious hosts', function() {
+        it('negative absCallback samples - dubious hostnames', function() {
             [
                 "http://localhost",                 
                 "http://localhost/foo",             
@@ -188,81 +188,3 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         
     });
 }());
-
-
-    // var baseHrefConfig = {
-    //     protocols: ['http', 'https', 'mailto', 'cid'], 
-    //     relScheme: true,
-    //     imgDataURIs: true, 
-    //     absCallback: function(url, protocol, authority, host, port, path) {
-    //         if (protocol === 'http' || protocol === 'https') {
-    //             url = protocol + '://' + host;
-    //             port.length && (url += ':' + port);
-    //         }
-    //         return [advConfig.absCallback(url, protocol, host, port), path];
-    //     },
-    //     relPath: true,
-    //     relCallback: function(url, baseHrefProcessor) {
-    //         return (url.indexOf('#') === 0) ? YUWL_WARN_HASH_ONLY : 
-    //             baseHrefProcessor ? baseHrefProcessor(url) : url;
-    //     }
-    // }
-    
-    // var baseHrefFactory = function(absBaseHref) {
-    //     var yuwlBase = urlFilterFactory(baseHrefConfig),
-    //         absBaseHrefInfo = yuwlBase(absBaseHref), 
-    //         authority = absBaseHrefInfo[0], 
-    //         path, lastIndex;
-
-    //     // quit if warning occurred
-    //     if (typeof authority === 'number') {
-    //         return authority;
-    //     }
-       
-    //     path = absBaseHrefInfo[1];
-        
-
-    //     function resolveUrl(relUrl, i, j) {
-    //         var I = i, J = j, fromIndex = I + J;
-    //         while (relUrl.indexOf('../', fromIndex) === fromIndex) {
-    //             I += 3;
-    //             fromIndex += 3;
-    //         }
-    //         while (relUrl.indexOf('./', fromIndex) === fromIndex) {
-    //             J += 2;
-    //             fromIndex += 2;
-    //         }
-    //         return (I > i || J > j) ? resolveUrl(relUrl, I, J) : [I, J];
-    //     }
-        
-
-    //     return function(relUrl) {
-    //         if (relUrl.indexOf('/') === 0) {  // rooted
-    //             return authority + relUrl;
-    //         }
-            
-    //         // handle ../ and ./
-    //         var ijPos = resolveUrl(relUrl, 0, 0),
-    //             i = ijPos[0],
-    //             j = ijPos[1];
-    //         if (i > 0 || j > 0) {
-    //             relUrl = relUrl.slice(i + j);
-    //         }
-
-    //         // the following runs at least once to resolve the 
-    //         i = Math.min(i / 3, 1);
-    //         lastIndex = path.indexOf('#') + 1;
-    //         while (i-- >= 0) {
-    //             lastIndex = path.lastIndexOf('/', lastIndex - 1);
-    //         }
-
-    //         // if there's a slash not following a hash 
-    //         if (lastIndex !== -1) {
-    //             // remove anything beyond the last slash
-    //             path = path.slice(0, lastIndex);
-    //         }
-
-    //         return authority + path + relUrl;
-    //     }
-    // };
-

@@ -12,10 +12,14 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 require("mocha");
 
 expect = require('expect.js');
-xssFilters = require('../src/xss-filters');
 testutils = require('./utils.js');
 
-require('./unit/private-xss-filters.js');
+
+xssFilters = require('../');
+require('./unit/xss-filters-private.js');
 require('./unit/xss-filters.js');
-require('./unit/url-filter-basics.js');
-require('./unit/url-filter-with-warnings.js');
+
+require('./unit/url-filters-basics.js');
+require('./unit/url-filters-parserAPI.js');
+require('./unit/url-filters-withOutput.js');
+require('./unit/url-filters-yUrlResolver.js');
