@@ -160,7 +160,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 });
             });
             it('default + relScheme - allow relative scheme - negative samples', function() {
-                n.splice(n.indexOf('//www.yahoo.com'));
+                n.splice(n.indexOf('//www.yahoo.com'), 1);
 
                 n.forEach(function(url) {
                     expect(yuwl(url)).to.eql('unsafe:' + url);
@@ -179,7 +179,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             // 'http&colon;//www.yahoo.com' is considered as a relative path without html decode
             // move 'http&colon;//www.yahoo.com' from n to p
             p.push('http&colon;//www.yahoo.com');
-            n.splice(n.indexOf('http&colon;//www.yahoo.com'));
+            n.splice(n.indexOf('http&colon;//www.yahoo.com'), 1);
 
             it('default + relPath - allow relative path - positive samples', function() {
                 p.forEach(function(url) {
@@ -226,7 +226,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             // 'http&colon;//www.yahoo.com' is considered as a relative path without html decode
             // move 'http&colon;//www.yahoo.com' from n to p
             p.push('http&colon;//www.yahoo.com');
-            n.splice(n.indexOf('http&colon;//www.yahoo.com'));
+            n.splice(n.indexOf('http&colon;//www.yahoo.com'), 1);
 
             it('default + relPathOnly - allow relative path ONLY - positive samples', function() {
                 p.forEach(function(url) {
@@ -362,7 +362,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var p = lastPositiveSamples2.slice(), n = lastNegativeSamples2.slice();
             
             // move //www.yahoo.com from negative to positive
-            n.splice(n.indexOf('//www.yahoo.com'));
+            n.splice(n.indexOf('//www.yahoo.com'), 1);
             p.push('//www.yahoo.com');
 
             it('default + options.hostnames + options.subdomain + options.relScheme - allow (*.)yahoo.com - positive samples', function() {
@@ -383,7 +383,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var p = lastPositiveSamples2.slice(), n = lastNegativeSamples2.slice();
 
             p.push('http://137.189.1.1');
-            n.splice(n.indexOf('http://137.189.1.1'));
+            n.splice(n.indexOf('http://137.189.1.1'), 1);
 
             it('default + options.hostnames + options.subdomain - allow (*.)yahoo.com and 137.189.1.1 - positive samples', function() {
                 p.forEach(function(url) {

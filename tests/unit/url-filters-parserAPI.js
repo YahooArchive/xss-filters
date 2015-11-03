@@ -14,39 +14,38 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     describe("urlFilterFactory: URL Parser tests", function() {
         var URLParser = urlFilterFactory({
             relScheme: true,
-            absCallback: function(url, scheme, auth, hostname, port, path, extraArg){
-                return JSON.stringify(arguments);
+            absCallback: function(url, scheme, auth, hostname, port, path){
+                return JSON.stringify([url, scheme, auth, hostname, port, path]);
             }});
 
         it('valid samples', function() {
 
             // standard
             var url = 'http://user:pass@host.com:8080/p/a/t/h?query=string#hash';
-            var result = {
-                    0: url,
-                    1: 'http:', 
-                    2: 'user:pass', 
-                    3: 'host.com', 
-                    4: '8080', 
-                    5: '/p/a/t/h?query=string#hash', 
-                    6: undefined};
+            var result = [
+                    url,
+                    'http:', 
+                    'user:pass', 
+                    'host.com', 
+                    '8080', 
+                    '/p/a/t/h?query=string#hash'];
 
             expect(URLParser(url)).to.eql(JSON.stringify(result));
 
             // no scheme 
             result[0] = url = '//user:pass@host.com:8080/p/a/t/h?query=string#hash';
-            result[1] = undefined;
+            result[1] = '';
             expect(URLParser(url)).to.eql(JSON.stringify(result));
 
             // no port 
             result[0] = url = 'http://user:pass@host.com/p/a/t/h?query=string#hash';
             result[1] = 'http:';
-            result[4] = undefined;
+            result[4] = '';
             expect(URLParser(url)).to.eql(JSON.stringify(result));
 
             // no auth and port
             result[0] = url = 'http://host.com/p/a/t/h?query=string#hash';
-            result[2] = undefined;
+            result[2] = '';
             expect(URLParser(url)).to.eql(JSON.stringify(result));
 
             // authority with reserved chars
@@ -60,27 +59,25 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         it('valid samples with whitespaces within auth, hostname, and port', function() {
             var url = 'http://use\r:pass@ho\ts\rt.com:80\n80/p/a/t/h?query=string#hash';
-            var result = {
-                    0: url,
-                    1: 'http:', 
-                    2: 'use:pass', 
-                    3: 'host.com', 
-                    4: '8080', 
-                    5: '/p/a/t/h?query=string#hash', 
-                    6: undefined};
+            var result = [
+                    url,
+                    'http:', 
+                    'use:pass', 
+                    'host.com', 
+                    '8080', 
+                    '/p/a/t/h?query=string#hash'];
 
             expect(URLParser(url)).to.eql(JSON.stringify(result));
         });
 
         it('valid samples with various slashes', function() {
-            var url, result = {
-                    0: '',
-                    1: 'http:', 
-                    2: 'user:pass', 
-                    3: 'host.com', 
-                    4: '8080', 
-                    5: '/p/a/t/h?query=string#hash', 
-                    6: undefined};
+            var url, result = [
+                    '',
+                    'http:', 
+                    'user:pass', 
+                    'host.com', 
+                    '8080', 
+                    '/p/a/t/h?query=string#hash'];
 
             // no slashes
             result[0] = url = 'http:user:pass@host.com:8080/p/a/t/h?query=string#hash';
@@ -99,7 +96,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(URLParser(url)).to.eql(JSON.stringify(result));
 
             // remove the scheme/protocol
-            result[1] = undefined;
+            result[1] = '';
             // no scheme and more than needed slashes
             result[0] = url = '////user:pass@host.com:8080/p/a/t/h?query=string#hash';
             expect(URLParser(url)).to.eql(JSON.stringify(result));
@@ -115,14 +112,13 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         });
 
         it('valid samples with (non-)default port', function() {
-            var url, result = {
-                    0: '',
-                    1: 'http:', 
-                    2: 'user:pass', 
-                    3: 'host.com', 
-                    4: '8080', 
-                    5: '/p/a/t/h?query=string#hash', 
-                    6: undefined};
+            var url, result = [
+                    '',
+                    'http:', 
+                    'user:pass', 
+                    'host.com', 
+                    '8080', 
+                    '/p/a/t/h?query=string#hash'];
 
             // non-default port
             result[0] = url = 'http://user:pass@host.com:8080/p/a/t/h?query=string#hash';
@@ -130,7 +126,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
             // default port
             result[0] = url = 'http://user:pass@host.com:80/p/a/t/h?query=string#hash';
-            result[4] = undefined;
+            result[4] = '';
             expect(URLParser(url)).to.eql(JSON.stringify(result));
         });
 

@@ -19,10 +19,10 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  *
  * @callback urlFilterFactoryAbsCallback
  * @param {string} url
- * @param {string|undefined} scheme - relative scheme is indicated as undefined. no trailing colon. always lowercased
- * @param {string|undefined} authority - no trailing @ if exists. username & password both included. no percent-decoding
- * @param {string|undefined} hostname - no percent-decoding. always lowercased
- * @param {string|undefined} port - non-default port number. no leading colon. no percent-decoding 
+ * @param {string} scheme - relative scheme is indicated as ''. no trailing colon. always lowercased
+ * @param {string} authority - no trailing @ if exists. username & password both included. no percent-decoding
+ * @param {string} hostname - no percent-decoding. always lowercased
+ * @param {string} port - non-default port number. no leading colon. no percent-decoding 
  * @returns the url, or anything of one's choice
  */
 
@@ -214,11 +214,11 @@ function urlFilterFactory (options) {
      *   urls that pass the tests.
      */
     return function(url) {
-        var scheme, authHostPort, i = 0, charCode, remainingUrl, defaultPort, port;
+        var scheme, authHostPort, i = 0, charCode, remainingUrl, defaultPort, port, empty = '';
         
         // handle special types
         if (url === undefined || typeof url === 'object') {
-            url = '';
+            url = empty;
         } else {
             url = url.toString();
 
@@ -261,23 +261,25 @@ function urlFilterFactory (options) {
                 scheme[1] = scheme[1].toLowerCase();
                 defaultPort = _urlFilters.specialSchemeDefaultPort[scheme[1]];
                 if (defaultPort === undefined) {
-                    return absCallback(url, scheme[1], '', '', '', remainingUrl);
+                    return absCallback(url, scheme[1], empty, empty, empty, remainingUrl);
                 }
+            } else {
+                scheme[1] = empty;
             }
 
             // if auth, hostname and port are properly validated
             if ((authHostPort = reAuthHostsPort.exec(remainingUrl))) {
                 // spec simply says whitespaces are syntax violation
                 // stripping them follows browsers' behavior
-                port = authHostPort[3] && authHostPort[3].replace(reOriginWhitespaces, '');
+                port = authHostPort[3] ? authHostPort[3].replace(reOriginWhitespaces, empty) : empty;
                 return absCallback(url, 
                     scheme[1], 
                     // spec simply says whitespaces are syntax violation
                     // stripping them follows browsers' behavior
-                    authHostPort[1] && authHostPort[1].replace(reOriginWhitespaces, ''), 
-                    authHostPort[2].replace(reOriginWhitespaces, '').toLowerCase(), 
-                    // pass undefined instead of the default port, if given
-                    port === defaultPort ? undefined : port, 
+                    authHostPort[1] ? authHostPort[1].replace(reOriginWhitespaces, empty) : empty, 
+                    authHostPort[2].replace(reOriginWhitespaces, empty).toLowerCase(), 
+                    // pass '' instead of the default port, if given
+                    port === defaultPort ? empty : port, 
                     // minus the delimeter if captured
                     remainingUrl.slice(authHostPort[0].length - (authHostPort[4] ? 1 : 0)));
             }
