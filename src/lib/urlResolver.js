@@ -36,41 +36,101 @@ function _absUrlResolver(url, origin, scheme, path, baseOrigin, baseScheme, base
     return (scheme === '' ? baseScheme : '') + origin + path;
 }
 
-function _relUrlResolver(path, baseOrigin, baseScheme, basePath, options) {
-    if (path.length === 0) { return baseOrigin + basePath; }
+var _resolvePathDoubleDots = /^(?:\.|%2[eE]){2}$/, _resolvePathSingleDot = /^(?:\.|%2[eE])$/;
 
-    var pos = -1, hashPos = -1, 
-        firstCharCode = path.charCodeAt(0);
+// return 1 for slash, 2 for ?/#, 0 otherwise
+function _resolvePathSymbol(path, i) {
+    var charCode = path.charCodeAt(i);
+    return charCode === 47 || charCode === 92 ? 1 :
+        charCode === 35 || charCode === 63 ? 2 :
+        0;
+}
+
+// This resembles what is requried by the spec except things regarding file scheme
+// Ref: https://url.spec.whatwg.org/#path-state
+function _resolvePath(path, scheme) {
+    // _composeOriginSchemePath() normalized path to have at least the first /
+    var i = 1, j = 1, len = path.length, arrPathLen = 0, symbol, 
+        arrPath = [], buffer, slash = /*scheme === 'file:' ? '\\' :*/ '/';
+    while (j <= len) {
+        if (j === len /* EOF */ || (symbol = _resolvePathSymbol(path, j))) {
+            buffer = path.slice(i, j);
+
+            if (_resolvePathDoubleDots.test(buffer)) {
+                arrPathLen !== 0 && --arrPathLen;
+                symbol !== 1 && (arrPath[arrPathLen++] = '');
+            } else if (_resolvePathSingleDot.test(buffer)) {
+                symbol !== 1 && (arrPath[arrPathLen++] = '');
+            } else {
+                arrPath[arrPathLen++] = buffer;
+            }
+
+            // supposedly switch to query or fragment state, which is dont care here
+            if (symbol === 2) { break; }
+            // the index of character that is just after the last slash
+            i = j + 1;
+        }
+        j++;
+    }
+    // aggregate the path as string + the remaining query/fragment
+    return slash + arrPath.slice(0, arrPathLen).join(slash) + path.slice(j);
+}
+
+// returns position of 
+//   the first # if ? does not exists, or
+//   the first ? if # does not exists, or
+//   the first ? or #, whichever is earlier if both exist
+//   i.e., -1 means none of them exists
+function _queryOrFragmentPosition(path) {
+    var qPos = path.indexOf('?'), hashPos = path.indexOf('#');
+    return (qPos === -1 || hashPos !== -1 && hashPos < qPos) ? hashPos : qPos;
+}
+
+function _relUrlResolver(path, baseOrigin, baseScheme, basePath, options) {
+    var resolve = options.resolvePath ? _resolvePath : function(p) {return p;};
+
+    if (path.length === 0) { return baseOrigin + resolve(basePath, baseScheme); }
+
+    var pos = -1, pathEnd = -1, t, firstCharCode = path.charCodeAt(0);
 
     /* / or \ */ 
     if (firstCharCode === 47 || firstCharCode === 92) {
-        return baseOrigin + path;
+        return baseOrigin + resolve(path, baseScheme);
     }
 
     /* # */
     if (firstCharCode === 35) {
         if (options.appendFragment) {
-           pos = basePath.indexOf('#'); 
-        } else { return path; }
-    } else {
-        // pos set to the first ? if it's before the first #, 
-        //         or the first # if ? does not exists
-        pos = basePath.indexOf('?');
-        hashPos = basePath.indexOf('#');
-        if (pos === -1 || hashPos !== -1 && hashPos < pos) {
-            pos = hashPos;
-        }
+            pos = basePath.indexOf('#');
+        } else { return path; } // no _resolvePath needed
+    } 
+    /* ? or else */
+    else {
+        // the position of ? or #, whichever is earlier
+        pos = _queryOrFragmentPosition(basePath);
 
+        // advance to position of filename, meaning
+        //   the last / or \\ before the position of ? or #
+        //   but it must not be .. or its equiv. representations
         if (firstCharCode !== 63) {  // not ?
+
+            // remove the fromIndex constraint if no ? nor # was encountered
+            pathEnd = pos === -1 ? undefined : pos;
+
+            // _composeOriginSchemePath() normalized path to have at least the first /
+            t = Math.max(basePath.lastIndexOf('/', pathEnd), 
+                            basePath.lastIndexOf('\\', pathEnd));
+
+            // update pos as t only when the filename (after slash and until ?/#) is not .. or equiv.
+            !_resolvePathDoubleDots.test(basePath.slice(t + 1, pathEnd)) && (pos = t);
+
             path = '/' + path;
-            pos = Math.max(basePath.lastIndexOf('/', pos), 
-                            basePath.lastIndexOf('\\', pos));
         }
     }
 
     // replace base path's component, if any, with the new one
-    return baseOrigin + (pos === -1 ? basePath :
-             basePath.slice(0, pos)) + path;
+    return baseOrigin + resolve(
+        (pos === -1 ? basePath : basePath.slice(0, pos)) + path, baseScheme);
 }
 
 function _unsafeUrlResolver(url) {
@@ -88,6 +148,8 @@ _urlFilters.yUrlResolver = function (options) {
         absResolver = typeof options.absResolver === 'function' ? options.absResolver : _absUrlResolver,
         relResolver = typeof options.relResolver === 'function' ? options.relResolver : _relUrlResolver,
         unsafeResolver = options.unsafeResolver || _unsafeUrlResolver;
+
+    options.resolvePath = options.resolvePath !== false;
 
     bFilter = _urlFilters.yUrlFilterFactory({
         relScheme: relScheme,

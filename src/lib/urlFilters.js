@@ -60,6 +60,9 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  * @param {boolean} options.imgDataURIs - to allow data scheme with the 
  *   MIME type equal to image/gif, image/jpeg, image/jpg, or image/png, and
  *   the encoding format as base64
+ * @param {boolean} options.IDNAtoASCII - convert all domains to its ASCII 
+ *   format according to RFC 3492 and RFC 5891 for matching/comparisons. See 
+ *   https://nodejs.org/api/punycode.html for details.
  * @param {urlFilterFactoryAbsCallback} options.absCallback - if matched,
  *   called to further process the url, scheme, hostname, non-default port, and
  *   path
@@ -75,7 +78,7 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  *   no callback is provided, return the matched url or prefix it with 
  *   "unsafe:" for unmatched ones.
  */
-function urlFilterFactory (options) {
+_urlFilters.yUrlFilterFactory = function (options) {
     /*jshint -W030 */
     options || (options = {});
 
@@ -88,8 +91,9 @@ function urlFilterFactory (options) {
         reEscape = /[.*?+\\\[\](){}|\^$]/g,
         // the following whitespaces are allowed in origin
         reOriginWhitespaces = /[\t\n\r]+/g,
-        // reIPv4 matches the pattern of IPv4 address and its hex representation
-        // used only when options.subdomain is set
+        // reIPv4 matches an IPv4 address or its hex representation, with an 
+        //   optional dot in front or behind. used only when options.subdomain 
+        //   is set
         // Ref: https://url.spec.whatwg.org/#concept-ipv4-parser
         reIPv4 = options.subdomain && /^\.?(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?|0[xX][\dA-Fa-f]{1,2})\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?|0[xX][\dA-Fa-f]{1,2})\.?$/,
         // reImgDataURIs hardcodes the image data URIs that are known to be safe
@@ -169,8 +173,10 @@ function urlFilterFactory (options) {
                         '(?:[^\\x00#\\/:?\\[\\]\\\\]+\\.)*' : 
                         '';
 
+            // convert any IDNA domains to ASCII for comparisons if so configured
             // escapes t from regexp sensitive chars
-            arr[i] += t.replace(reEscape, '\\$&');
+            arr[i] += (options.IDNAtoASCII ? punycode.toASCII(t) : t).
+                        replace(reEscape, '\\$&');
         }
 
         // build reAuthHostsPort from the hosts array, must be case insensitive
@@ -193,17 +199,17 @@ function urlFilterFactory (options) {
         //   whitespaces to be later stripped
         //   Ref: https://url.spec.whatwg.org/#port-state
         reAuthHostsPort = new RegExp(
-            '^[\\/\\\\]*(?:([^\\/\\\\?#]*)@)?' +        // leading slashes and authority
-            '(' + arr.join('|') + ')' +                 // allowed hostnames, in regexp
-            '(?::?$|:([\\d\\t\\n\\r]+)|([\\/?#\\\\]))', // until an optional colon then EOF, a port, or a delimeter
-            'i');                                       // case insensitive required for hostnames
+            '^[\\/\\\\]*(?:([^\\/\\\\?#]*)@)?' +          // leading slashes and authority
+            '(' + arr.join('|') + ')' +                   // allowed hostnames, in regexp
+            '(?::?$|:([\\d\\t\\n\\r]+)|(?=[\\/?#\\\\]))', // until an optional colon then EOF, a port, or a delimeter
+            'i');                                         // case insensitive required for hostnames
     }
     // extract the auth, hostname and port number if options.absCallback is supplied
     else if (options.absCallback) {
         // the default reAuthHostsPort. see above for details
         //   hostname must be present, auth/port optional
         //   accept \t\n\r, which will be later stripped
-        reAuthHostsPort = /^[\/\\]*(?:([^\/\\?#]*)@)?([^\x00#\/:?\[\]\\]+|\[(?:[^\x00\/?#\\]+)\])(?::?$|:([\d\t\n\r]+)|([\/?#\\]))/;
+        reAuthHostsPort = /^[\/\\]*(?:([^\/\\?#]*)@)?([^\x00#\/:?\[\]\\]+|\[(?:[^\x00\/?#\\]+)\])(?::?$|:([\d\t\n\r]+)|(?=[\/?#\\]))/;
     }
 
     /*
@@ -269,25 +275,23 @@ function urlFilterFactory (options) {
 
             // if auth, hostname and port are properly validated
             if ((authHostPort = reAuthHostsPort.exec(remainingUrl))) {
-                // spec simply says whitespaces are syntax violation
-                // stripping them follows browsers' behavior
-                port = authHostPort[3] ? authHostPort[3].replace(reOriginWhitespaces, empty) : empty;
+                // spec simply says \t\r\n are syntax violation
+                // to observe browsers' behavior, strip them in auth/host/port
+                authHostPort[2] = authHostPort[2].replace(reOriginWhitespaces, empty).toLowerCase(); // host
+                port = authHostPort[3] ? authHostPort[3].replace(reOriginWhitespaces, empty) : empty; // port
+
                 return absCallback(url, 
                     scheme[1], 
-                    // spec simply says whitespaces are syntax violation
-                    // stripping them follows browsers' behavior
-                    authHostPort[1] ? authHostPort[1].replace(reOriginWhitespaces, empty) : empty, 
-                    authHostPort[2].replace(reOriginWhitespaces, empty).toLowerCase(), 
+                    authHostPort[1] ? authHostPort[1].replace(reOriginWhitespaces, empty) : empty, // auth
+                    // convert any IDNA domains to ASCII for comparisons if so configured
+                    options.IDNAtoASCII ? punycode.toASCII(authHostPort[2]) : authHostPort[2], 
                     // pass '' instead of the default port, if given
                     port === defaultPort ? empty : port, 
                     // minus the delimeter if captured
-                    remainingUrl.slice(authHostPort[0].length - (authHostPort[4] ? 1 : 0)));
+                    remainingUrl.slice(authHostPort[0].length));
             }
         }
 
         return unsafeCallback(url);
     };
 };
-
-// export the util to create url filter
-_urlFilters.yUrlFilterFactory = urlFilterFactory;

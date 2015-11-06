@@ -36,7 +36,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             urls.forEach(function(url){
                 expect(yUrlResolver(url, baseURL)).to.eql('unsafe:' + url);
             });
-
         });
         it('relative baseURL samples', function() {
             var baseURL = '/xyz';
@@ -99,6 +98,15 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 expect(yUrlResolver(url, baseURL)).to.eql(absUrlsAnswers[i]);
             });
 
+            baseURL = 'http://@yahoo.com:81';
+            expect(yUrlResolver('asdf', baseURL)).to.eql('http://yahoo.com:81/asdf');
+            expect(yUrlResolver('/asdf', baseURL)).to.eql('http://yahoo.com:81/asdf');
+            expect(yUrlResolver('?asdf', baseURL)).to.eql('http://yahoo.com:81/?asdf');
+            expect(yUrlResolver('#asdf', baseURL)).to.eql('http://yahoo.com:81/#asdf');
+            absUrls.forEach(function(url, i){
+                expect(yUrlResolver(url, baseURL)).to.eql(absUrlsAnswers[i]);
+            });
+
             baseURL = 'http://yahoo.com:';
             expect(yUrlResolver('asdf', baseURL)).to.eql('http://yahoo.com/asdf');
             expect(yUrlResolver('/asdf', baseURL)).to.eql('http://yahoo.com/asdf');
@@ -145,18 +153,18 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             });
 
             baseURL = 'http://www.yahoo.com/fin\\ance\\hello?world#test/ing?complex#url';
-            expect(yUrlResolver('asdf', baseURL)).to.eql('http://www.yahoo.com/fin\\ance/asdf');
+            expect(yUrlResolver('asdf', baseURL)).to.eql('http://www.yahoo.com/fin/ance/asdf');
             expect(yUrlResolver('/asdf', baseURL)).to.eql('http://www.yahoo.com/asdf');
-            expect(yUrlResolver('?asdf', baseURL)).to.eql('http://www.yahoo.com/fin\\ance\\hello?asdf');
-            expect(yUrlResolver('#asdf', baseURL)).to.eql('http://www.yahoo.com/fin\\ance\\hello?world#asdf');
+            expect(yUrlResolver('?asdf', baseURL)).to.eql('http://www.yahoo.com/fin/ance/hello?asdf');
+            expect(yUrlResolver('#asdf', baseURL)).to.eql('http://www.yahoo.com/fin/ance/hello?world#asdf');
             absUrls.forEach(function(url, i){
                 expect(yUrlResolver(url, baseURL)).to.eql(absUrlsAnswers[i]);
             });
             // last baseURL is being kept
-            expect(yUrlResolver('asdf')).to.eql('http://www.yahoo.com/fin\\ance/asdf');
+            expect(yUrlResolver('asdf')).to.eql('http://www.yahoo.com/fin/ance/asdf');
             expect(yUrlResolver('/asdf')).to.eql('http://www.yahoo.com/asdf');
-            expect(yUrlResolver('?asdf')).to.eql('http://www.yahoo.com/fin\\ance\\hello?asdf');
-            expect(yUrlResolver('#asdf')).to.eql('http://www.yahoo.com/fin\\ance\\hello?world#asdf');
+            expect(yUrlResolver('?asdf')).to.eql('http://www.yahoo.com/fin/ance/hello?asdf');
+            expect(yUrlResolver('#asdf')).to.eql('http://www.yahoo.com/fin/ance/hello?world#asdf');
             absUrls.forEach(function(url, i){
                 expect(yUrlResolver(url)).to.eql(absUrlsAnswers[i]);
             });
@@ -179,7 +187,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             });
         });
 
-        it('use baseURL given no url', function() {
+        it('supply baseURL but no url', function() {
             var baseURL = 'http://www.yahoo.com/';
 
             expect(yUrlResolver('', baseURL)).to.eql(baseURL);
@@ -188,6 +196,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             // last baseURL is being kept
             expect(yUrlResolver('')).to.eql(baseURL);
             expect(yUrlResolver()).to.eql(baseURL);
+        });
+
+        it('supply invalid url and no baseURL', function() {
+            var yUrlResolver = xssFilters.urlFilters.yUrlResolver();
+            expect(yUrlResolver('javascript:alert(1)')).to.eql('unsafe:javascript:alert(1)');
         });
 
         it('inherit scheme', function() {
@@ -209,6 +222,97 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(yUrlResolver('hello/world.html', baseURL)).to.eql('http://yahoo.com/hello/world.html');
             expect(yUrlResolver('/hello/world.html', baseURL)).to.eql('http://yahoo.com/hello/world.html');
         });
+
+        it('relative path resolution', function() {
+            var yUrlResolver = xssFilters.urlFilters.yUrlResolver();
+            yUrlResolver('', 'http:yahoo.com'); // set baseURL
+
+            expect(yUrlResolver('../../hello/world.html')).to.eql('http://yahoo.com/hello/world.html');
+            
+            expect(yUrlResolver('/hello3/hello2/../../..')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../.%2e')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2e.')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2e%2e')).to.eql('http://yahoo.com/');
+
+            expect(yUrlResolver('/hello3/hello2/../../../')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../.%2E/')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2E./')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2E%2e/')).to.eql('http://yahoo.com/');
+            
+            expect(yUrlResolver('/hello3/hello2/../../../hello')).to.eql('http://yahoo.com/hello');
+            expect(yUrlResolver('/hello3/hello2/../../..?hello')).to.eql('http://yahoo.com/?hello');
+            expect(yUrlResolver('/hello3/hello2/../../..#hello')).to.eql('http://yahoo.com/#hello');
+
+            expect(yUrlResolver('/hello3/hello2/../../.')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2e')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2E')).to.eql('http://yahoo.com/');
+            
+            expect(yUrlResolver('/hello3/hello2/../.././')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2e/')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../%2E/')).to.eql('http://yahoo.com/');
+            
+            expect(yUrlResolver('/hello3/hello2/../.././hello')).to.eql('http://yahoo.com/hello');
+            expect(yUrlResolver('/hello3/hello2/../../.?hello')).to.eql('http://yahoo.com/?hello');
+            expect(yUrlResolver('/hello3/hello2/../../.#hello')).to.eql('http://yahoo.com/#hello');
+
+            expect(yUrlResolver('/hello2/../hello/world.html')).to.eql('http://yahoo.com/hello/world.html');
+            expect(yUrlResolver('/hello2/../hello/./world.html')).to.eql('http://yahoo.com/hello/world.html');
+
+            expect(yUrlResolver('/hello/#/hello2/world.html')).to.eql('http://yahoo.com/hello/#/hello2/world.html');
+            expect(yUrlResolver('/hello/?hello2/world.html')).to.eql('http://yahoo.com/hello/?hello2/world.html');
+            expect(yUrlResolver('/hello/#/hello2?world.html')).to.eql('http://yahoo.com/hello/#/hello2?world.html');
+
+
+            yUrlResolver('', 'http:yahoo.com/hello9'); // set baseURL
+            expect(yUrlResolver('../../hello/world.html')).to.eql('http://yahoo.com/hello/world.html');
+            expect(yUrlResolver('hello3/hello2/../..')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('hello3/hello2/../../')).to.eql('http://yahoo.com/');
+
+            yUrlResolver('', 'http:yahoo.com/hello9/'); // set baseURL
+            expect(yUrlResolver('../../hello/world.html')).to.eql('http://yahoo.com/hello/world.html');
+            expect(yUrlResolver('hello3/hello2/../..')).to.eql('http://yahoo.com/hello9/');
+            expect(yUrlResolver('hello3/hello2/../../')).to.eql('http://yahoo.com/hello9/');
+            expect(yUrlResolver('hello3/hello2/../hello')).to.eql('http://yahoo.com/hello9/hello3/hello');
+            expect(yUrlResolver('hello3/hello2/../..?hello')).to.eql('http://yahoo.com/hello9/?hello');
+            expect(yUrlResolver('hello3/hello2/../..#hello')).to.eql('http://yahoo.com/hello9/#hello');
+
+            expect(yUrlResolver('/hello3/hello2/../..')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../../')).to.eql('http://yahoo.com/');
+            expect(yUrlResolver('/hello3/hello2/../hello')).to.eql('http://yahoo.com/hello3/hello');
+            expect(yUrlResolver('/hello3/hello2/../..?hello')).to.eql('http://yahoo.com/?hello');
+            expect(yUrlResolver('/hello3/hello2/../..#hello')).to.eql('http://yahoo.com/#hello');
+
+            yUrlResolver('', 'http:yahoo.com/#hello?world/'); // set baseURL
+            expect(yUrlResolver('?hello')).to.eql('http://yahoo.com/?hello');
+            expect(yUrlResolver('#hello')).to.eql('#hello');
+
+
+            yUrlResolver('', 'http://yahoo.com/hello1/hello2/'); // set baseURL
+            expect(yUrlResolver('foo/bar.html')).to.eql('http://yahoo.com/hello1/hello2/foo/bar.html');
+            expect(yUrlResolver('hello/../world.html')).to.eql('http://yahoo.com/hello1/hello2/world.html');
+            expect(yUrlResolver('/hello/../world.html')).to.eql('http://yahoo.com/world.html');
+
+            yUrlResolver('', 'http://yahoo.com/hello1/hello2/..'); // set baseURL
+            expect(yUrlResolver('foo/bar.html')).to.eql('http://yahoo.com/hello1/foo/bar.html');
+            expect(yUrlResolver('hello/../world.html')).to.eql('http://yahoo.com/hello1/world.html');
+            expect(yUrlResolver('/hello/../world.html')).to.eql('http://yahoo.com/world.html');
+        });
+
+
+        it('relative path resolution (turned off)', function() {
+            var yUrlResolver = xssFilters.urlFilters.yUrlResolver({resolvePath: false});
+
+            var baseURL = 'http://yahoo.com/hello1/hello2/';
+            expect(yUrlResolver('foo/bar.html', baseURL)).to.eql('http://yahoo.com/hello1/hello2/foo/bar.html');
+            expect(yUrlResolver('hello/../world.html', baseURL)).to.eql('http://yahoo.com/hello1/hello2/hello/../world.html');
+            expect(yUrlResolver('/hello/../world.html', baseURL)).to.eql('http://yahoo.com/hello/../world.html');
+
+            var baseURL = 'http://yahoo.com/hello1/hello2/..';
+            expect(yUrlResolver('foo/bar.html', baseURL)).to.eql('http://yahoo.com/hello1/hello2/../foo/bar.html');
+            expect(yUrlResolver('hello/../world.html', baseURL)).to.eql('http://yahoo.com/hello1/hello2/../hello/../world.html');
+            expect(yUrlResolver('/hello/../world.html', baseURL)).to.eql('http://yahoo.com/hello/../world.html');
+        });
+
 
         it('mailto: scheme URLs and any relative paths', function() {
             function absBypass(url, origin, scheme, path) { return origin + path; }
