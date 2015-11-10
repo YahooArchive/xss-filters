@@ -60,6 +60,8 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  * @param {boolean} options.imgDataURIs - to allow data scheme with the 
  *   MIME type equal to image/gif, image/jpeg, image/jpg, or image/png, and
  *   the encoding format as base64
+ * @param {boolean} options.hostparsing - to enable host parsing according to 
+ *   https://url.spec.whatwg.org/#host-parsing
  * @param {boolean} options.IDNAtoASCII - convert all domains to its ASCII 
  *   format according to RFC 3492 and RFC 5891 for matching/comparisons. See 
  *   https://nodejs.org/api/punycode.html for details.
@@ -295,3 +297,139 @@ _urlFilters.yUrlFilterFactory = function (options) {
         return unsafeCallback(url);
     };
 };
+
+
+
+
+
+
+
+
+
+
+// designed according to https://url.spec.whatwg.org/#percent-decode
+var _reHostInvalidSyntax = /[\x00\x09\x0A\x0D#%\/:?@\[\\\]]/g;
+
+function _yUrlHostParser(input, options) {
+    var FAILURE = null,
+        n, i = 0, len = input.length, state = 0;
+
+    if (input.charCodeAt(0) === 91) { /* [ */
+        if (input.charCodeAt(len - 1) !== 93) { /* ] */
+            return FAILURE;
+        }
+        // TODO: return ipv6 parsing
+    }
+
+    try {
+        // Let domain be the result of utf-8 decode without BOM on the percent
+        //   decoding of utf-8 encode on input.
+        input = decodeURI(input);
+
+        // Let asciiDomain be the result of running domain to ASCII on domain.
+        // If asciiDomain is failure, return failure.
+        options.IDNAtoASCII && (input = punycode.toASCII(input));
+
+    } catch(e) {
+        return FAILURE;
+    }
+    
+    // If asciiDomain contains one of U+0000, U+0009, U+000A, U+000D, U+0020, 
+    //   "#", "%", "/", ":", "?", "@", "[", "\", and "]", syntax violation, 
+    //   return failure.
+    // We follow this except the space character U+0020
+    if (_reHostInvalidSyntax.test(input)) {
+        return FAILURE;
+    }
+
+    return _yUrlIPv4ParsingAndSerializing(input);
+}
+
+function _yUrlIPv4NumberParsing(part) {
+    var n, len = part.length;
+    return (len > 2 && part.slice(0, 2).toLowerCase() === '0x') ? parseInt(part.slice(2), 16) :
+        (len === 0) ? 0 :
+        (len > 2 && part.charCodeAt(0) === 48 /* '0' */) ? parseInt(part.slice(1), 8) :
+        parseInt(part);
+}
+
+function _yUrlIPv4ParsingAndSerializing(input) {
+    // Let syntaxViolationFlag be unset.
+
+    // Let parts be input split on ".".
+    var ipv4, chunks = input.split('.'), 
+        len = chunks.length, i = 0, numbers,
+        FAILURE = null, output = '';
+
+    // If the last item in parts is the empty string, set syntaxViolationFlag and remove the last item from parts.
+    chunks[len - 1] === '' && (len = --chunks.length);
+
+    // If parts has more than four items, return input.
+    if (len > 4) { return input; }
+
+    // Let numbers be the empty list.
+    numbers = [];
+
+    // For each part in parts:
+    while (i < len) {
+        // If part is the empty string, return input.
+        // 0..0x300 is a domain, not an IPv4 address.
+        if (chunks[i] === '') { return input; }
+
+        // Let n be the result of parsing part using syntaxViolationFlag.
+        n = _yUrlIPv4NumberParsing(chunks[i]);
+
+        // If n is failure, return input.
+        if (isNaN(n)) { return input; }
+
+        // Append n to numbers.
+        numbers[i++] = n;
+    }
+
+    // If syntaxViolationFlag is set, syntax violation.
+    // If any item in numbers is greater than 255, syntax violation.
+
+    // If any but the last item in numbers is greater than 255, return failure.
+    for (i = 0; i < len - 1; i++) {
+        if (chunks[i] > 255) { return FAILURE; }
+    }
+
+    // If the last item in numbers is greater than or equal to 256(5 − the number of items in numbers), syntax violation, return failure.
+    if (chunks[len - 1] > Math.pow(256, 5 - len)) { return FAILURE; }
+
+    // Let ipv4 be the last item in numbers.
+    ipv4 = chunks[len - 1];
+
+    // Remove the last item from numbers.
+    len = --chunks.length;
+
+    // Let counter be zero.
+    // For each n in numbers:
+    for (i = 0; i < len; i++) {
+        // Increment ipv4 by n × 256(3 − counter).
+        ipv4 += chunks[i] * Math.pow(256, 3 - i);
+        // Increment counter by one.
+    }
+
+    // Return ipv4.
+
+    // The IPv4 serializer takes an IPv4 address address and then runs these steps:
+    // Let output be the empty string.
+
+    // Let n be the value of address.
+
+    // Repeat four times:
+    for (i = 0; i < 4; i++) {
+        // Prepend n % 256, serialized, to output.
+        output = ipv4 % 256 + output;
+
+        // Unless this is the fourth time, prepend "." to output.
+        (i !== 3) && (output = '.' + output);
+
+        // Set n to n / 256.
+        ipv4 = Math.floor(ipv4 / 256);
+    }
+
+    // Return output.
+    return output;
+}
