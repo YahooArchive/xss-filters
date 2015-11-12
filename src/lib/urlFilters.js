@@ -308,17 +308,19 @@ _urlFilters.yUrlFilterFactory = function (options) {
 
 
 // designed according to https://url.spec.whatwg.org/#percent-decode
-var _reHostInvalidSyntax = /[\x00\x09\x0A\x0D#%\/:?@\[\\\]]/g;
+var _reHostInvalidSyntax = /[\x00\x09\x0A\x0D#%\/:?@\[\\\]]/g,
+    _reIPv6Piece = /^[\dA-Fa-f]{1,4}$/,
+    _yUrl256Power = [1, 256, 65536, 16777216, 4294967296];
 
 function _yUrlHostParser(input, options) {
-    var FAILURE = null,
+    var FAILURE = null, result, 
         n, i = 0, len = input.length, state = 0;
 
     if (input.charCodeAt(0) === 91) { /* [ */
-        if (input.charCodeAt(len - 1) !== 93) { /* ] */
-            return FAILURE;
-        }
-        // TODO: return ipv6 parsing
+        // ipv6 parser
+        return (input.charCodeAt(len - 1) === 93 /* ] */ ) ? 
+            _yIPv6Parser(input.slice(1, len - 1)) :
+            FAILURE;
     }
 
     try {
@@ -342,94 +344,137 @@ function _yUrlHostParser(input, options) {
         return FAILURE;
     }
 
-    return _yUrlIPv4ParsingAndSerializing(input);
+    if (result = _yIPv4Parser(input)) {
+        return result.ipv4 || result.domain;
+    }
+    return FAILURE;
 }
 
-function _yUrlIPv4NumberParsing(part) {
+
+function _yIPv4NumberParser(part) {
     var n, len = part.length;
     return (len > 2 && part.slice(0, 2).toLowerCase() === '0x') ? parseInt(part.slice(2), 16) :
-        (len === 0) ? 0 :
+        // (len === 0) ? 0 : // since "if (chunks[i].length === 0) { return input; }" done the job
         (len > 2 && part.charCodeAt(0) === 48 /* '0' */) ? parseInt(part.slice(1), 8) :
         parseInt(part);
 }
 
-function _yUrlIPv4ParsingAndSerializing(input) {
-    // Let syntaxViolationFlag be unset.
+function _yIPv4Parser(input) {
+    var chunks = input.split('.'), 
+        len = chunks.length, 
+        i = 0, 
+        FAILURE = null, INPUT = {'domain': input},
+        outputA = '', outputB = '';
 
-    // Let parts be input split on ".".
-    var ipv4, chunks = input.split('.'), 
-        len = chunks.length, i = 0, numbers,
-        FAILURE = null, output = '';
+    // If the last item in parts is the empty string, remove the last item from
+    //   parts
+    chunks[len - 1].length === 0 && len--;
 
-    // If the last item in parts is the empty string, set syntaxViolationFlag and remove the last item from parts.
-    chunks[len - 1] === '' && (len = --chunks.length);
+    // If parts has more than four items, return input
+    if (len > 4) { return INPUT; }
 
-    // If parts has more than four items, return input.
-    if (len > 4) { return input; }
-
-    // Let numbers be the empty list.
-    numbers = [];
-
-    // For each part in parts:
-    while (i < len) {
+    // parse the number in every but the last item. Use them directly as output
+    for (; i < len - 1; i++) {
         // If part is the empty string, return input.
-        // 0..0x300 is a domain, not an IPv4 address.
-        if (chunks[i] === '') { return input; }
+        //   0..0x300 is a domain, not an IPv4 address.
+        if (chunks[i].length === 0 || 
+            // If n is failure, return input.
+            isNaN((n = _yIPv4NumberParser(chunks[i])))) { return INPUT; }
 
-        // Let n be the result of parsing part using syntaxViolationFlag.
-        n = _yUrlIPv4NumberParsing(chunks[i]);
+        // If any but the last item in numbers > 255, return failure
+        if (n > 255) { return FAILURE; }
 
-        // If n is failure, return input.
-        if (isNaN(n)) { return input; }
-
-        // Append n to numbers.
-        numbers[i++] = n;
+        outputA += n + '.';
     }
 
-    // If syntaxViolationFlag is set, syntax violation.
-    // If any item in numbers is greater than 255, syntax violation.
+    // process the last item similarly
+    if (chunks[i].length === 0 || 
+        isNaN((n = _yIPv4NumberParser(chunks[i])))) { return INPUT; }
 
-    // If any but the last item in numbers is greater than 255, return failure.
-    for (i = 0; i < len - 1; i++) {
-        if (chunks[i] > 255) { return FAILURE; }
-    }
+    // If the last item in numbers is greater than or equal to 256^(5 − the 
+    //   number of items in numbers), syntax violation, return failure.
+    if (n >= _yUrl256Power[5 - len]) { return FAILURE; }
 
-    // If the last item in numbers is greater than or equal to 256(5 − the number of items in numbers), syntax violation, return failure.
-    if (chunks[len - 1] > Math.pow(256, 5 - len)) { return FAILURE; }
-
-    // Let ipv4 be the last item in numbers.
-    ipv4 = chunks[len - 1];
-
-    // Remove the last item from numbers.
-    len = --chunks.length;
-
-    // Let counter be zero.
-    // For each n in numbers:
-    for (i = 0; i < len; i++) {
-        // Increment ipv4 by n × 256(3 − counter).
-        ipv4 += chunks[i] * Math.pow(256, 3 - i);
-        // Increment counter by one.
-    }
-
-    // Return ipv4.
-
-    // The IPv4 serializer takes an IPv4 address address and then runs these steps:
-    // Let output be the empty string.
-
-    // Let n be the value of address.
-
-    // Repeat four times:
-    for (i = 0; i < 4; i++) {
+    // IPv4 serializer composes anything after outputA
+    for (i = len - 1; i < 4; i++) {
         // Prepend n % 256, serialized, to output.
-        output = ipv4 % 256 + output;
-
+        outputB = (n % 256) + outputB;
         // Unless this is the fourth time, prepend "." to output.
-        (i !== 3) && (output = '.' + output);
-
+        (i !== 3) && (outputB = '.' + outputB);
         // Set n to n / 256.
-        ipv4 = Math.floor(ipv4 / 256);
+        n = Math.floor(n / 256);
     }
 
-    // Return output.
-    return output;
+    // Return output as {ipv4: 'IPv4_ADDRESS'}
+    return {'ipv4': outputA + outputB};
 }
+
+function _yIPv6Parser(input) {
+    if (input === '::') { return input; }
+
+    var chunks = input.split(':'), 
+        compressPtr = null, compressAtEdge = false,
+        i = 0, len = chunks.length, piece, result,
+        FAILURE = null;
+
+    // too little or many colons than allowed
+    if (len < 3 || len > 9 || 
+        // start with a single colon (except double-colon)
+        chunks[0].length === 0 && chunks[1].length !== 0) { return FAILURE; }
+
+    // capture as many 4-hex-digits as possible
+    for (; i < (compressPtr === null ? 8 : len); i++) {
+        piece = chunks[i];
+        // colon detected
+        if (piece.length === 0) {
+            // 2nd empty (meaning double-colon)
+            if (compressPtr !== null) {
+                // double-colon allowed at either start or end
+                if (!compressAtEdge && (i === 1 || compressPtr === len - 2)) {
+                    compressAtEdge = true;
+                    continue;
+                }
+                return FAILURE;
+            }
+            // if the input ends with a single colon
+            if (i === len - 1) { return FAILURE; }
+            // point to the first colon position
+            compressPtr = i;
+        } 
+        // check if the piece conform to 4 hex digits
+        else if (_reIPv6Piece.test(piece)) {
+            // lowercased, and leading zeros are removed
+            chunks[i] = parseInt(piece, 16).toString(16);
+        }
+        // quit the loop once it doesn't match 4 hex digits
+        else { break; }
+    }
+
+    // all pieces conform to 4 hex digits
+    if (i === len) {}
+    // only the last one doesn't conform to 4 hex digits
+    //   either has 6 or less pieces processed, or begin with double-colon
+    //   it has a dot and it's an IPv4
+    else if (i === len - 1 &&
+            (i < 7 || compressAtEdge) &&
+            piece.indexOf('.') !== -1 &&
+            (result = _yIPv4Parser(piece)) && result.hasOwnProperty('ipv4')) {
+        // replace the last piece with two pieces of ipv4 in hexadecimal
+        result = result.ipv4.split('.');
+        chunks[i]   = (result[0] * 0x100 + parseInt(result[1])).toString(16);
+        chunks[i+1] = (result[2] * 0x100 + parseInt(result[3])).toString(16);
+        len++;
+    }
+    else { return FAILURE; }
+
+    // insert zero for ipv6 that has 7 chunks plus a compressor 
+    if (compressAtEdge) {
+        --len === 8 && chunks.splice(compressPtr, 2, '0');
+    } else if (len === 8 && compressPtr !== null) {
+        chunks[compressPtr] = '0';
+    }
+
+    // return the input in string if there're less than 8 chunks
+    return len === 9 ? FAILURE : chunks.join(':');
+}
+
