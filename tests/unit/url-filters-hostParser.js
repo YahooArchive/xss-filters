@@ -236,6 +236,44 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         })();
 
+
+        (function() {
+            var yuwl = urlFilters.create({
+                hostnames: [
+                    '[1:2:3:4:5:6:7::]', 
+                    '[::1:2:3:4:5:6:7]', 
+                    '[::2:3:4:5:6:7]', 
+                    '[1:2:3:4:5:6:123.123.123.123]',
+                    '2.153.207.181', 
+                    '123456',
+                    'yahoo.com'],
+                subdomain: true,
+                parseHost: true, 
+                absCallback: function(url, scheme, auth, host, port, path, extra) {
+                    return extra;
+                }, 
+                unsafeCallback: function(url) {
+                    return null;
+                }
+            });
+
+            it('hostname matching (without subdomain)', function() {
+                [
+                    'http://[1:2:3:4:5:6:7::]', 'http://[1:2:3:4:5:6:7:0]', 'http://[1:2:3:4:5:6:0.7.0]', 'http://[1:2:3:4:5:6:0.7.0x]',
+                    'http://[::1:2:3:4:5:6:7]', 'http://[0:1:2:3:4:5:6:7]', 'http://%5B0:1:2:3:4%3a5:6:7]',
+                    'http://[::2:3:4:5:6:7]',
+                    'http://[1:2:3:4:5:6:123.123.123.123]', 'http://[1:2:3:4:5:6:7b7b:7b7b]', 
+                    'http://2.153.207.181', 'http://43634613',
+                    'http://123456', 'http://0.1.226.64', 'http://0.1%2e226.64',
+                    'http://YaHOO.com', 'http://YaHOO%2Ecom', 'http://www.yahoo.com'
+                ].forEach(function(url) {
+                    // console.log(url, yuwl(url));
+                    expect(yuwl(url)).not.eql(null);
+                });
+            });
+
+        })();
+
     });
 
 

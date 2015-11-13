@@ -136,8 +136,8 @@ _urlFilters.create = function (options) {
             // if subdomain enabled, use regexp to check if a host is whitelisted
             else if (options.subdomain) {
                 for (; re = reHosts[i]; i++) {
-                    if (re.test(t.host)) { 
-                        safeCallback(t);
+                    if (re.test ? re.test(t.host) : re === t.host) { 
+                        return safeCallback(t);
                     }
                 }
             }
@@ -227,7 +227,7 @@ _urlFilters.create = function (options) {
             reHosts[i] += (arr[i] = t.host).replace(reEscape, '\\$&');
 
             if (options.parseHost && options.subdomain) {
-                reHosts[i] = new RegExp('^' + reHosts[i] + '$');
+                reHosts[i] = t.domain ? new RegExp('^' + reHosts[i] + '$') : t.host;
             }
         }
 
