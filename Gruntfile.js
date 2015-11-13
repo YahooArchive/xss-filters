@@ -29,7 +29,7 @@ module.exports = function(grunt) {
     },
     browserify: {
       standalone: {
-        src: [ 'src/<%= pkg.name %>.js' ],
+        src: [ 'src/index-node.js' ],
         dest: 'dist/<%= pkg.name %>.js',
         options: {
           browserifyOptions: {
@@ -48,23 +48,61 @@ module.exports = function(grunt) {
           join_vars: true
         }
       },
-      buildBrowserified: {
-        src: 'dist/<%= pkg.name %>.js',
-        dest: 'dist/<%= pkg.name %>.min-browserified.js'
+      // buildBrowserified: {
+      //   src: 'dist/<%= pkg.name %>.js',
+      //   dest: 'dist/<%= pkg.name %>.min-browserified.js'
+      // },
+      buildUrlOnly: {
+        options: {
+          wrap: 'urlFilters'
+        },
+        src: [
+          'src/lib/hostParser.js',
+          'src/lib/urlFilters.js',
+          'src/lib/urlResolver.js'],
+        dest: 'dist/url-filters-only.min.<%= pkg.version %>.js'
+      },
+      buildXssOnly: {
+        options: {
+          wrap: 'xssFilters'
+        },
+        src: [
+          'src/index-browser.js', 
+          'src/lib/htmlDecode.js', 
+          'src/lib/xssFilters.priv.js', 
+          'src/lib/xssFilters.js'
+        ],
+        dest: 'dist/xss-filters.min.<%= pkg.version %>.js'
       },
       buildMin: {
         options: {
           wrap: 'xssFilters'
         },
-        src: 'src/<%= pkg.name %>.js',
-        dest: 'dist/<%= pkg.name %>.min.js'
+        src: [
+          'src/index-browser.js', 
+          'src/lib/hostParser.js',
+          'src/lib/urlFilters.js',
+          'src/lib/urlResolver.js',
+          'src/lib/htmlDecode.js', 
+          'src/lib/xssFilters.priv.js', 
+          'src/lib/xssFilters.js'
+        ],
+        dest: 'dist/all-filters.min.js'
       },
       buildMinWithVersion: {
         options: {
           wrap: 'xssFilters'
         },
-        src: 'src/<%= pkg.name %>.js',
-        dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.min.js'
+        src: [
+          'src/index-browser.js', 
+          'src/lib/hostParser.js',
+          'src/lib/urlFilters.js',
+          'src/lib/urlResolver.js',
+          'src/lib/htmlDecode.js', 
+          'src/lib/xssFilters.priv.js', 
+          'src/lib/xssFilters.js'
+        ],
+        dest: 'dist/all-filters.min.<%= pkg.version %>.js'
       }
     },
     mocha_istanbul: {
@@ -98,7 +136,7 @@ module.exports = function(grunt) {
   });
 
   grunt.loadNpmTasks('grunt-mocha-istanbul');
-  grunt.loadNpmTasks('grunt-browserify');
+  // grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
@@ -112,7 +150,8 @@ module.exports = function(grunt) {
     testSet.push('dist', 'karma:ci');
 
   grunt.registerTask('test', testSet);
-  grunt.registerTask('dist', ['browserify', 'uglify'])
+  // grunt.registerTask('dist', ['browserify', 'uglify'])
+  grunt.registerTask('dist', 'uglify')
   grunt.registerTask('docs', ['jsdoc']);
   grunt.registerTask('default', ['test', 'dist']);
 

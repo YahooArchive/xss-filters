@@ -48,7 +48,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('filter yublf exists', function() {
             expect(filter.yublf).to.be.ok();
         });
-        
+
     });
 
     describe("private-xss-filters: alias tests", function() {

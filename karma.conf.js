@@ -2,7 +2,7 @@ module.exports = function(config) {
 
   if (!process.env.SAUCE_USERNAME || !process.env.SAUCE_ACCESS_KEY) {
     console.warn('No SAUCE credentials found (missing SAUCE_USERNAME and SAUCE_ACCESS_KEY env variables). Skipping SauceLabs testing.');
-    return;
+    // return;
   }
 
   // Browsers to run on Sauce Labs
@@ -103,7 +103,7 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       'node_modules/expect.js/index.js',
-      'dist/xss-filters.min.js',
+      'dist/all-filters.min.js',
       'tests/polyfills.js',
       'tests/utils.js',
       'tests/unit/*.js'
