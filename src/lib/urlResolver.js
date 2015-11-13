@@ -11,7 +11,7 @@ var _urlFilters = exports.urlFilters || exports;
 
 // for node js version
 if (typeof require === 'function') {
-    _urlFilters.yUrlFilterFactory = require('./urlFilters').yUrlFilterFactory;
+    _urlFilters.create = require('./urlFilters').create;
     _urlFilters.specialSchemeDefaultPort = require('./urlFilters').specialSchemeDefaultPort;
 }
 
@@ -123,7 +123,7 @@ _urlFilters.yUrlResolver = function (options) {
     options.resolvePath = options.resolvePath !== false;
 
     function initUrlFilter() {
-        urlFilter = _urlFilters.yUrlFilterFactory({
+        urlFilter = _urlFilters.create({
             schemes: schemes,
             relScheme: relScheme,
             relPath: true,
@@ -140,7 +140,7 @@ _urlFilters.yUrlResolver = function (options) {
         });
     }
 
-    bFilter = _urlFilters.yUrlFilterFactory({
+    bFilter = _urlFilters.create({
         relScheme: relScheme,
         schemes: schemes,
         absCallback: function(url, scheme, auth, hostname, port, path) {

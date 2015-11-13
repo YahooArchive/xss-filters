@@ -20,6 +20,7 @@ require('./unit/xss-filters-private.js');
 require('./unit/xss-filters.js');
 
 require('./unit/url-filters-basics.js');
+require('./unit/url-filters-hostParser.js');
 require('./unit/url-filters-parserAPI.js');
 require('./unit/url-filters-withOutput.js');
 require('./unit/url-filters-yUrlResolver.js');

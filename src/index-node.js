@@ -12,11 +12,13 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
  */
 
 /*jshint node: true */
+var extend = require('extend');
 
 // populate the xss filters
 module.exports = exports = require('./lib/xssFilters');
 
-exports._privFilters.yHtmlDecode = require('./lib/htmlDecode').yHtmlDecode;
+// add yHtmlDecode to _privFilters
+extend(exports._privFilters, require('./lib/htmlDecode'));
 
 // the following is largely designed for secure-handlebars-helpers
 exports._getPrivFilters = {
@@ -29,6 +31,8 @@ exports._getPrivFilters = {
     }
 };
 
-
-exports.urlFilters = require('./lib/urlFilters');
-exports.urlFilters.yUrlResolver = require('./lib/urlResolver').yUrlResolver;
+// add urlFilters
+exports.urlFilters = extend(
+	require('./lib/urlFilters'), 
+	require('./lib/hostParser'), 
+	require('./lib/urlResolver'));

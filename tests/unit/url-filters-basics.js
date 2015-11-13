@@ -9,7 +9,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 */
 (function() {
     var _privFilters = xssFilters._privFilters;
-    var urlFilterFactory = xssFilters.urlFilters.yUrlFilterFactory;
+    var urlFilterFactory = xssFilters.urlFilters.create;
 
     describe("urlFilterFactory tests", function() {
 
@@ -41,6 +41,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('invalid host', function() {
             expect(function() {
                 urlFilterFactory({hostnames:['yahoo.com:88']});
+            }).to.throwException();
+            expect(function() {
+                urlFilterFactory({hostnames:['%9999']});
             }).to.throwException();
         });
 

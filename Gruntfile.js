@@ -57,6 +57,7 @@ module.exports = function(grunt) {
           wrap: 'urlFilters'
         },
         src: [
+          'src/lib/hostParser.js',
           'src/lib/urlFilters.js',
           'src/lib/urlResolver.js'],
         dest: 'dist/url-filters-only.min.<%= pkg.version %>.js'
@@ -79,6 +80,7 @@ module.exports = function(grunt) {
         },
         src: [
           'src/index-browser.js', 
+          'src/lib/hostParser.js',
           'src/lib/urlFilters.js',
           'src/lib/urlResolver.js',
           'src/lib/htmlDecode.js', 
@@ -93,6 +95,7 @@ module.exports = function(grunt) {
         },
         src: [
           'src/index-browser.js', 
+          'src/lib/hostParser.js',
           'src/lib/urlFilters.js',
           'src/lib/urlResolver.js',
           'src/lib/htmlDecode.js', 

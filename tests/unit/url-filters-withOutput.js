@@ -9,7 +9,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 */
 (function() {
 
-    var urlFilterFactory = xssFilters.urlFilters.yUrlFilterFactory;
+    var urlFilterFactory = xssFilters.urlFilters.create;
 
     var YUWL_WARN_HOST_NUMERIC = 1,
         YUWL_WARN_HOST_LOCAL = 2,

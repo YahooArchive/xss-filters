@@ -10,12 +10,39 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
 var _urlFilters = exports.urlFilters || exports;
 
+// In general, hostname must be present, auth/port optional
+// ^[\/\\]* is to ignore any number of leading slashes. 
+//   Spec says at most 2 slashes after scheme, otherwise syntax violation
+//   here, we follow browsers' behavior to ignore syntax violation
+//   Ref: https://url.spec.whatwg.org/#special-authority-ignore-slashes-state
+// (?:([^\/\\?#]*)@)? captures the authority (user:pass) without the trailing @
+//   We omitted here any encoding/separation for username and password
+//   Ref: https://url.spec.whatwg.org/#authority-state
+// (IPV6-LIKE|VALID_HOST) is explained as follows:
+//  [^\x00#\/:?\[\]\\]+ captures chars that can specify domain and IPv4
+//    - @ won't appear here anyway as it's captured by prior regexp
+//    - \x20 is found okay to browser, so it's also allowed here
+//    - \t\n\r is allowed here, to be later stripped (follows browser behavior)
+//  (?:\[|%5[bB])(?:[^\/?#\\]+)\] is to capture ipv6-like address
+//    - \t\n\r is allowed here, to be later stripped (follows browser behavior)
+//    Ref: https://url.spec.whatwg.org/#concept-ipv6-parser
+//  Ref: https://url.spec.whatwg.org/#concept-host-parser
+// (?:ENDS_W/OPTIONAL_COLON|OPTIONAL_PORT|FOLLOWED_BY_DELIMETER) explanations:
+//  :?$ tests if it ends with an optional colon
+//  (?::([\\d\\t\\n\\r]*))? captures the port number if any
+//    whitespaces to be later stripped
+//    Ref: https://url.spec.whatwg.org/#port-state
+//  (?=[\/?#\\]) means a pathname follows (delimeter is not captured though)
+//    this is required to ensure the whole hostname is matched
+//  Ref: https://url.spec.whatwg.org/#host-state
+var _reUrlAuthHostsPort = /^[\/\\]*(?:([^\/\\?#]*)@)?((?:\[|%5[bB])(?:[^\x00\/?#\\]+)\]|[^\x00#\/:?\[\]\\]+)(?::?$|:([\d\t\n\r]+)|(?=[\/?#\\]))/;
+
 // Schemes including file, gopher, ws and wss are not heavily tested
 // https://url.spec.whatwg.org/#special-scheme
 _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '70', 'http:': '80', 'https:': '443', 'ws:': '80', 'wss:': '443'};
 
 /**
- * This is what a urlFilterFactoryAbsCallback would expect
+ * The prototype of urlFilterFactoryAbsCallback
  *
  * @callback urlFilterFactoryAbsCallback
  * @param {string} url
@@ -23,19 +50,27 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  * @param {string} authority - no trailing @ if exists. username & password both included. no percent-decoding
  * @param {string} hostname - no percent-decoding. always lowercased
  * @param {string} port - non-default port number. no leading colon. no percent-decoding 
- * @returns the url, or anything of one's choice
+ * @returns the url, or anything of your choice
  */
 
 /**
- * This is what a urlFilterFactoryRelCallback would expect
+ * The prototype of urlFilterFactoryRelCallback
  *
  * @callback urlFilterFactoryRelCallback
  * @param {string} path
- * @returns the url, or anything of one's choice
+ * @returns the url, or anything of your choice
+ */
+
+/**
+ * The prototype of urlFilterFactoryUnsafeCallback
+ *
+ * @callback urlFilterFactoryUnsafeCallback
+ * @param {string} url
+ * @returns the url, or anything of your choice (e.g., 'unsafe:' + url)
  */
 
 /* 
- * urlFilterFactory creates a URL whitelist filter, which largely observes 
+ * This creates a URL whitelist filter, which largely observes 
  *  the specification in https://url.spec.whatwg.org/#url-parsing. It is 
  *  designed for matching whitelists of schemes and hosts, and will thus
  *  parse only up to a sufficient position (i.e., faster for not requiring 
@@ -55,13 +90,16 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  *   each matches /^[\w\.-]+$/. If any one is found unmatched, return null
  * @param {boolean} options.subdomain - to enable subdomain matching for 
  *   non-IPs specified in options.hostnames
+ * @param {boolean} options.parseHost - the specified options.hostnames
+ *   are validated against URLs after their hosts are parsed and normalized, 
+ *   as specified in https://url.spec.whatwg.org/#host-parsing. Even if 
+ *   options.hostnames are not provided, absCallback are called only if a host
+ *   can be parsed correctly, otherwise, call unsafeCallback instead.
  * @param {boolean} options.relPath - to allow relative path
  * @param {boolean} options.relPathOnly - to allow relative path only
  * @param {boolean} options.imgDataURIs - to allow data scheme with the 
  *   MIME type equal to image/gif, image/jpeg, image/jpg, or image/png, and
  *   the encoding format as base64
- * @param {boolean} options.hostparsing - to enable host parsing according to 
- *   https://url.spec.whatwg.org/#host-parsing
  * @param {boolean} options.IDNAtoASCII - convert all domains to its ASCII 
  *   format according to RFC 3492 and RFC 5891 for matching/comparisons. See 
  *   https://nodejs.org/api/punycode.html for details.
@@ -80,24 +118,47 @@ _urlFilters.specialSchemeDefaultPort = {'ftp:': '21', 'file:': '', 'gopher:': '7
  *   no callback is provided, return the matched url or prefix it with 
  *   "unsafe:" for unmatched ones.
  */
-_urlFilters.yUrlFilterFactory = function (options) {
+_urlFilters.create = function (options) {
     /*jshint -W030 */
     options || (options = {});
 
-    var i, n, arr, t, reElement, reProtos, reAuthHostsPort, 
+    function _parseHostAbsCallback (url, scheme, auth, host, port, path) {
+        var i = 0, re, t, hostnames = options.hostnames, 
+            safeCallback = function (t) {
+                return _safeAbsCallback(url, scheme, auth, t.host, port, path, t);
+            };
+        // parse the host
+        if ((t = _urlFilters.hostParser(host, options)) !== null) {
+            // no hostnames enforcement 
+            if (!hostnames) {
+                return safeCallback(t);
+            }
+            // if subdomain enabled, use regexp to check if a host is whitelisted
+            else if (options.subdomain) {
+                for (; re = reHosts[i]; i++) {
+                    if (re.test(t.host)) { 
+                        safeCallback(t);
+                    }
+                }
+            }
+            // host found in options.hostnames
+            else if (hostnames.indexOf(t.host) !== -1) {
+                return safeCallback(t);
+            }
+        }
+        return unsafeCallback(url);
+    }
+
+    var i, n, arr, t, reElement, reProtos, reAuthHostsPort, reHosts = [],
         _safeCallback = function(url) { return url; },
-        absCallback = options.absCallback || _safeCallback,
+        _safeAbsCallback = options.absCallback || _safeCallback,
+        absCallback = options.parseHost ? _parseHostAbsCallback : _safeAbsCallback,
         relCallback = options.relCallback || _safeCallback,
         unsafeCallback = options.unsafeCallback || function(url) { return 'unsafe:' + url; },
         // reEscape escapes chars that are sensitive to regexp
         reEscape = /[.*?+\\\[\](){}|\^$]/g,
         // the following whitespaces are allowed in origin
         reOriginWhitespaces = /[\t\n\r]+/g,
-        // reIPv4 matches an IPv4 address or its hex representation, with an 
-        //   optional dot in front or behind. used only when options.subdomain 
-        //   is set
-        // Ref: https://url.spec.whatwg.org/#concept-ipv4-parser
-        reIPv4 = options.subdomain && /^\.?(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?|0[xX][\dA-Fa-f]{1,2})\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?|0[xX][\dA-Fa-f]{1,2})\.?$/,
         // reImgDataURIs hardcodes the image data URIs that are known to be safe
         reImgDataURIs = options.imgDataURIs && /^(data):image\/(?:jpe?g|gif|png);base64,[a-z0-9+\/=]*$/i,
         // reRelPath ensures the URL has no scheme/auth/hostname/port
@@ -125,12 +186,6 @@ _urlFilters.yUrlFilterFactory = function (options) {
                 // throw TypeError if an array element cannot be validated
                 throw new TypeError(t + ' is an invalid scheme.');
             }
-            // if (URI_BLACKLIST_PROTOCOLS[ (t = t.toLowerCase()) ]) {
-            //     throw new TypeError(t + ' is a disallowed scheme.' + 
-            //         (t === 'data' ? 
-            //             ' Enable safe image types \\w/options.imgDataURIs':
-            //             ''));
-            // }
             // escapes t from regexp sensitive chars
             arr[i] = t.replace(reEscape, '\\$&');
         }
@@ -150,68 +205,49 @@ _urlFilters.yUrlFilterFactory = function (options) {
         reProtos = options.relScheme ? /^(?:(https?:)|[\/\\]{2})/i : /^(https?:)/i;
     }
 
+    // clean reHosts first
+    reHosts.length = 0;
+
     // build reAuthHostsPort if options.hostnames are provided
     if ((arr = options.hostnames) && (n = arr.length)) {
-        // [^\x00\t\n\r#\/:?\[\\\]]+ tests a valid host 
-        //   - @ won't appear here anyway as it's captured by prior regexp
-        //   - \x20 is found okay to browser, so it's also allowed here
-        //   - \t\n\r are not allowed, developers should stripped them
-        //   Ref: https://url.spec.whatwg.org/#concept-host-parser
-        // \[(?:[^\t\n\r\/?#\\]+)\] is minimal to capture ipv6-like address
-        //   Ref: https://url.spec.whatwg.org/#concept-ipv6-parser
-        reElement = /^(?:[^\x00\t\n\r#\/:?\[\]\\]+|\[(?:[^\x00\t\n\r\/?#\\]+)\])$/;
-
         for (i = 0; i < n; i++) {
             // throw TypeError if an array element cannot be validated
-            if (!reElement.test( (t = arr[i]) )) {
-                throw new TypeError(t + ' is an invalid hostname.');
+            if ((t = _urlFilters.hostParser(arr[i], options)) === null) {
+                throw new TypeError(arr[i] + ' is an invalid hostname.');
             }
             
-            // if the hostname provided is neither IPv6 nor IPv4
-            arr[i] = (options.subdomain && 
-                    t.charCodeAt(0) !== 91 /*[*/ && !reIPv4.test(t)) ?
+            // relax for subdomain for those domain elements
+            reHosts[i] = (options.subdomain && t.domain) ?
                         // See above for valid hostname requirement
                         // accept \t\n\r, which will be later stripped
                         '(?:[^\\x00#\\/:?\\[\\]\\\\]+\\.)*' : 
                         '';
 
-            // convert any IDNA domains to ASCII for comparisons if so configured
             // escapes t from regexp sensitive chars
-            arr[i] += (options.IDNAtoASCII ? punycode.toASCII(t) : t).
-                        replace(reEscape, '\\$&');
+            reHosts[i] += (arr[i] = t.host).replace(reEscape, '\\$&');
+
+            if (options.parseHost && options.subdomain) {
+                reHosts[i] = new RegExp('^' + reHosts[i] + '$');
+            }
         }
 
         // build reAuthHostsPort from the hosts array, must be case insensitive
-        // in general, hostname must be present, auth/port optional
-        // ^[\\/\\\\]* actually is there to ignore any number of leading slashes. 
-        //   This observes the spec except when there're >2 slashes after scheme,
-        //   only syntax violation is specified So, follow browsers' behavior to continue parsing
-        //   Ref: https://url.spec.whatwg.org/#special-authority-ignore-slashes-state
-        // (?:([^\\/\\\\?#]*)@)? captures the authority without the trailing @ (i.e., username:password) if any
-        //   This observes the spec except omitting any encoding/separating username and password
-        //   Ref: https://url.spec.whatwg.org/#authority-state
-        // '(' + arr.join('|') + ')' is to capture the whitelisted hostnames
-        //   Refer to above for the requirements
-        // (?:$|OPTIONAL_PORT_SEE_BELOW($|[\\/?#\\\\])) required for host array
-        //   [\\/?#\\\\] is delimeter to separate hostname from path, 
-        //   required to capture the whole hostname for matching element in
-        //   the options.hostnames array
-        //   Ref: https://url.spec.whatwg.org/#host-state
-        // (?::([\\d\\t\\n\\r]*))? captures the port number if any
-        //   whitespaces to be later stripped
-        //   Ref: https://url.spec.whatwg.org/#port-state
-        reAuthHostsPort = new RegExp(
-            '^[\\/\\\\]*(?:([^\\/\\\\?#]*)@)?' +          // leading slashes and authority
-            '(' + arr.join('|') + ')' +                   // allowed hostnames, in regexp
-            '(?::?$|:([\\d\\t\\n\\r]+)|(?=[\\/?#\\\\]))', // until an optional colon then EOF, a port, or a delimeter
-            'i');                                         // case insensitive required for hostnames
-    }
-    // extract the auth, hostname and port number if options.absCallback is supplied
-    else if (options.absCallback) {
-        // the default reAuthHostsPort. see above for details
-        //   hostname must be present, auth/port optional
-        //   accept \t\n\r, which will be later stripped
-        reAuthHostsPort = /^[\/\\]*(?:([^\/\\?#]*)@)?([^\x00#\/:?\[\]\\]+|\[(?:[^\x00\/?#\\]+)\])(?::?$|:([\d\t\n\r]+)|(?=[\/?#\\]))/;
+        // it is based on _reUrlAuthHostsPort, see comments there for details
+        // The difference here is to directly match the hostnames using regexp:
+        // '(' + arr.join('|') + ')' is to match the whitelisted hostnames
+        reAuthHostsPort = options.parseHost ? _reUrlAuthHostsPort :
+            new RegExp('^[\\/\\\\]*(?:([^\\/\\\\?#]*)@)?' +
+                '(' + reHosts.join('|') + ')' +     // allowed hostnames, in regexp
+                '(?::?$|:([\\d\\t\\n\\r]+)|(?=[\\/?#\\\\]))', 'i');
+    } else {
+        // options.subdomain must be false given no options.hostnames
+        delete options.hostnames;
+
+        // extract the auth, hostname and port number if options.absCallback is supplied
+        if (options.absCallback) {
+            // use the default reAuthHostsPort. see _reUrlAuthHostsPort for details
+            reAuthHostsPort = _reUrlAuthHostsPort;
+        }
     }
 
     /*
@@ -277,19 +313,13 @@ _urlFilters.yUrlFilterFactory = function (options) {
 
             // if auth, hostname and port are properly validated
             if ((authHostPort = reAuthHostsPort.exec(remainingUrl))) {
-                // spec simply says \t\r\n are syntax violation
-                // to observe browsers' behavior, strip them in auth/host/port
-                authHostPort[2] = authHostPort[2].replace(reOriginWhitespaces, empty).toLowerCase(); // host
+                // strip \t\r\n in origin like browsers to handle syntax violations
                 port = authHostPort[3] ? authHostPort[3].replace(reOriginWhitespaces, empty) : empty; // port
-
                 return absCallback(url, 
                     scheme[1], 
                     authHostPort[1] ? authHostPort[1].replace(reOriginWhitespaces, empty) : empty, // auth
-                    // convert any IDNA domains to ASCII for comparisons if so configured
-                    options.IDNAtoASCII ? punycode.toASCII(authHostPort[2]) : authHostPort[2], 
-                    // pass '' instead of the default port, if given
-                    port === defaultPort ? empty : port, 
-                    // minus the delimeter if captured
+                    authHostPort[2].replace(reOriginWhitespaces, empty), // host
+                    port === defaultPort ? empty : port, // pass '' instead of the default port, if given
                     remainingUrl.slice(authHostPort[0].length));
             }
         }
@@ -297,184 +327,4 @@ _urlFilters.yUrlFilterFactory = function (options) {
         return unsafeCallback(url);
     };
 };
-
-
-
-
-
-
-
-
-
-
-// designed according to https://url.spec.whatwg.org/#percent-decode
-var _reHostInvalidSyntax = /[\x00\x09\x0A\x0D#%\/:?@\[\\\]]/g,
-    _reIPv6Piece = /^[\dA-Fa-f]{1,4}$/,
-    _yUrl256Power = [1, 256, 65536, 16777216, 4294967296];
-
-function _yUrlHostParser(input, options) {
-    var FAILURE = null, result, 
-        n, i = 0, len = input.length, state = 0;
-
-    if (input.charCodeAt(0) === 91) { /* [ */
-        // ipv6 parser
-        return (input.charCodeAt(len - 1) === 93 /* ] */ ) ? 
-            _yIPv6Parser(input.slice(1, len - 1)) :
-            FAILURE;
-    }
-
-    try {
-        // Let domain be the result of utf-8 decode without BOM on the percent
-        //   decoding of utf-8 encode on input.
-        input = decodeURI(input);
-
-        // Let asciiDomain be the result of running domain to ASCII on domain.
-        // If asciiDomain is failure, return failure.
-        options.IDNAtoASCII && (input = punycode.toASCII(input));
-
-    } catch(e) {
-        return FAILURE;
-    }
-    
-    // If asciiDomain contains one of U+0000, U+0009, U+000A, U+000D, U+0020, 
-    //   "#", "%", "/", ":", "?", "@", "[", "\", and "]", syntax violation, 
-    //   return failure.
-    // We follow this except the space character U+0020
-    if (_reHostInvalidSyntax.test(input)) {
-        return FAILURE;
-    }
-
-    if (result = _yIPv4Parser(input)) {
-        return result.ipv4 || result.domain;
-    }
-    return FAILURE;
-}
-
-
-function _yIPv4NumberParser(part) {
-    var n, len = part.length;
-    return (len > 2 && part.slice(0, 2).toLowerCase() === '0x') ? parseInt(part.slice(2), 16) :
-        // (len === 0) ? 0 : // since "if (chunks[i].length === 0) { return input; }" done the job
-        (len > 2 && part.charCodeAt(0) === 48 /* '0' */) ? parseInt(part.slice(1), 8) :
-        parseInt(part);
-}
-
-function _yIPv4Parser(input) {
-    var chunks = input.split('.'), 
-        len = chunks.length, 
-        i = 0, 
-        FAILURE = null, INPUT = {'domain': input},
-        outputA = '', outputB = '';
-
-    // If the last item in parts is the empty string, remove the last item from
-    //   parts
-    chunks[len - 1].length === 0 && len--;
-
-    // If parts has more than four items, return input
-    if (len > 4) { return INPUT; }
-
-    // parse the number in every but the last item. Use them directly as output
-    for (; i < len - 1; i++) {
-        // If part is the empty string, return input.
-        //   0..0x300 is a domain, not an IPv4 address.
-        if (chunks[i].length === 0 || 
-            // If n is failure, return input.
-            isNaN((n = _yIPv4NumberParser(chunks[i])))) { return INPUT; }
-
-        // If any but the last item in numbers > 255, return failure
-        if (n > 255) { return FAILURE; }
-
-        outputA += n + '.';
-    }
-
-    // process the last item similarly
-    if (chunks[i].length === 0 || 
-        isNaN((n = _yIPv4NumberParser(chunks[i])))) { return INPUT; }
-
-    // If the last item in numbers is greater than or equal to 256^(5 − the 
-    //   number of items in numbers), syntax violation, return failure.
-    if (n >= _yUrl256Power[5 - len]) { return FAILURE; }
-
-    // IPv4 serializer composes anything after outputA
-    for (i = len - 1; i < 4; i++) {
-        // Prepend n % 256, serialized, to output.
-        outputB = (n % 256) + outputB;
-        // Unless this is the fourth time, prepend "." to output.
-        (i !== 3) && (outputB = '.' + outputB);
-        // Set n to n / 256.
-        n = Math.floor(n / 256);
-    }
-
-    // Return output as {ipv4: 'IPv4_ADDRESS'}
-    return {'ipv4': outputA + outputB};
-}
-
-function _yIPv6Parser(input) {
-    if (input === '::') { return input; }
-
-    var chunks = input.split(':'), 
-        compressPtr = null, compressAtEdge = false,
-        i = 0, len = chunks.length, piece, result,
-        FAILURE = null;
-
-    // too little or many colons than allowed
-    if (len < 3 || len > 9 || 
-        // start with a single colon (except double-colon)
-        chunks[0].length === 0 && chunks[1].length !== 0) { return FAILURE; }
-
-    // capture as many 4-hex-digits as possible
-    for (; i < (compressPtr === null ? 8 : len); i++) {
-        piece = chunks[i];
-        // colon detected
-        if (piece.length === 0) {
-            // 2nd empty (meaning double-colon)
-            if (compressPtr !== null) {
-                // double-colon allowed at either start or end
-                if (!compressAtEdge && (i === 1 || compressPtr === len - 2)) {
-                    compressAtEdge = true;
-                    continue;
-                }
-                return FAILURE;
-            }
-            // if the input ends with a single colon
-            if (i === len - 1) { return FAILURE; }
-            // point to the first colon position
-            compressPtr = i;
-        } 
-        // check if the piece conform to 4 hex digits
-        else if (_reIPv6Piece.test(piece)) {
-            // lowercased, and leading zeros are removed
-            chunks[i] = parseInt(piece, 16).toString(16);
-        }
-        // quit the loop once it doesn't match 4 hex digits
-        else { break; }
-    }
-
-    // all pieces conform to 4 hex digits
-    if (i === len) {}
-    // only the last one doesn't conform to 4 hex digits
-    //   either has 6 or less pieces processed, or begin with double-colon
-    //   it has a dot and it's an IPv4
-    else if (i === len - 1 &&
-            (i < 7 || compressAtEdge) &&
-            piece.indexOf('.') !== -1 &&
-            (result = _yIPv4Parser(piece)) && result.hasOwnProperty('ipv4')) {
-        // replace the last piece with two pieces of ipv4 in hexadecimal
-        result = result.ipv4.split('.');
-        chunks[i]   = (result[0] * 0x100 + parseInt(result[1])).toString(16);
-        chunks[i+1] = (result[2] * 0x100 + parseInt(result[3])).toString(16);
-        len++;
-    }
-    else { return FAILURE; }
-
-    // insert zero for ipv6 that has 7 chunks plus a compressor 
-    if (compressAtEdge) {
-        --len === 8 && chunks.splice(compressPtr, 2, '0');
-    } else if (len === 8 && compressPtr !== null) {
-        chunks[compressPtr] = '0';
-    }
-
-    // return the input in string if there're less than 8 chunks
-    return len === 9 ? FAILURE : chunks.join(':');
-}
 

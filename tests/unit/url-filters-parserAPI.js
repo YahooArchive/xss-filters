@@ -9,7 +9,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 */
 (function() {
     var _privFilters = xssFilters._privFilters;
-    var urlFilterFactory = xssFilters.urlFilters.yUrlFilterFactory;
+    var urlFilterFactory = xssFilters.urlFilters.create;
     
     describe("urlFilterFactory: URL Parser tests", function() {
         var URLParser = urlFilterFactory({
