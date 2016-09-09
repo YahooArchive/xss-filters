@@ -1,6 +1,6 @@
 module.exports = function(config) {
 
-  if (!process.env.SAUCE_USERNAME || !process.env.SAUCE_ACCESS_KEY) {
+  if (process.env.TRAVIS && !process.env.SAUCE_USERNAME || !process.env.SAUCE_ACCESS_KEY) {
     console.warn('No SAUCE credentials found (missing SAUCE_USERNAME and SAUCE_ACCESS_KEY env variables). Skipping SauceLabs testing.');
     return;
   }
