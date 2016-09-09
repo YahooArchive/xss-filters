@@ -8,19 +8,19 @@
     }
   ],
   "description": "Secure XSS Filters - Just sufficient output filtering to prevent XSS!",
-  "author": "Nera Liu <neraliu@yahoo-inc.com>, Adonis Fung <adon@yahoo-inc.com> and Albert Yu <albertyu@yahoo-inc.com>",
+  "author": "Adonis Fung <adon@yahoo-inc.com>, Nera Liu <neraliu@gmail.com>,  and Albert Yu <yukinying@gmail.com>",
   "contributors": [
-    {
-      "name": "Nera Liu",
-      "email": "neraliu@yahoo-inc.com"
-    },
     {
       "name": "Adonis Fung",
       "email": "adon@yahoo-inc.com"
     },
     {
+      "name": "Nera Liu",
+      "email": "neraliu@gmail.com"
+    },
+    {
       "name": "Albert Yu",
-      "email": "albertyu@yahoo-inc.com"
+      "email": "yukinying@gmail.com"
     }
   ],
   "main": "src/xss-filters.js",
