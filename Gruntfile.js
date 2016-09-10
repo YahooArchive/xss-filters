@@ -45,7 +45,8 @@ module.exports = function(grunt) {
               + ' */\n',
         compress: {
           join_vars: true
-        }
+        },
+        screwIE8: false // must turn it off, otherwise, \x0B will be converted as \v, which is interpreted as v in IE8 or below
       },
       buildBrowserified: {
         src: 'dist/<%= pkg.name %>.js',
