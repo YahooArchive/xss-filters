@@ -1,11 +1,11 @@
 {
   "name": "xss-filters",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "homepage": "https://github.com/yahoo/xss-filters",
   "authors": [
-    "Nera Liu <neraliu@yahoo-inc.com>",
     "Adonis Fung <adon@yahoo-inc.com>",
-    "Albert Yu <albertyu@yahoo-inc.com>"
+    "Nera Liu <neraliu@gmail.com>",
+    "Albert Yu <yukinying@gmail.com>"
   ],
   "description": "Just sufficient output filtering to prevent XSS",
   "main": "dist/xss-filters.min.js",
