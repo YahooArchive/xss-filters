@@ -19,9 +19,8 @@ after_success:
 - test $(cat $TRAVIS_BUILD_DIR/package.json | grep version | awk '{print $2}' | sed 's/"//g' | sed 's/,//g' | awk '{print "v"$1}' ) = $TRAVIS_TAG && test $(echo $TRAVIS_NODE_VERSION | awk '{print $1}' ) = '0.12' && export VALID_VERSION=true
 deploy:
   provider: npm
-  email: adon@yahoo-inc.com
   api_key:
-    secure: dXgtzjI57fYTysVANjVvUBnyk+jUSkUlN8sRt9he+v516LQ80asY8ZNLZ+H6aUlLgXCTK78mk+zXXmLdD4/mPXuZ0MGZYTDOI3fbwfuCSQc4X3vKqtSDHp7Qh1uU9+0SOCC0t6jKzEoBXj3ceY7FxeRwh1HwJYtnSOU3VT/1yIM=
+    secure: UkFovSRO5RhBUZdEe1ZsRs6+XO493XP1GnnZGK9PsFAYU5sHv+z4S8Xz0blFsJy0b7dBQbCGTeIugQlq6NIlAnfhCHGwCRPH3wQIeCOo/FWRDmeCeaBXrQNt1dcpByGzfAPZ6mww/0u4nyy35JPP9MYr2pR2tYVgq91cdd6okOk=
   on:
     condition: $VALID_VERSION = true
     tags: true
