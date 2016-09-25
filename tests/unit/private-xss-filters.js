@@ -321,7 +321,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         ];
 
         it('filter yceu[uds] test', function() {
-            var expectedResults = [ 'undefined', 'null',
+            var expectedResults = [ '', '',
                 ';-x:\'&\';-v:',
                 '1.1', '10%', '+10px', '-10px', '#fff', 
                 ';-x:\'\uD7FF\';-v:', ';-x:\'\uD800\';-v:', ';-x:\'\uDFFF\';-v:', ';-x:\'\u1234567\';-v:',
@@ -338,7 +338,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             testutils.test_yce(filter.yceu, testPatterns, expectedResults);
         });
         it('filter yced[uds] test', function() {
-            var expectedResults = [ 'undefined', 'null',
+            var expectedResults = [ '', '',
                 '&', 
                 '1.1', '10%', '+10px', '-10px', '#fff', 
                 '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
@@ -355,7 +355,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             testutils.test_yce(filter.yced, testPatterns, expectedResults);
         });
         it('filter yces[uds] test', function() {
-            var expectedResults = [ 'undefined', 'null',
+            var expectedResults = [ '', '',
                 '&', 
                 '1.1', '10%', '+10px', '-10px', '#fff', 
                 '\uD7FF', '\uD800', '\uDFFF', '\u1234567',
@@ -439,25 +439,44 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     });
 
     describe("private-xss-filters: utility tests", function() {
-        it('htmlDecode d exists', function() {
-            expect(filter.d).to.be.ok();
+        it('htmlDecode exists', function() {
+            expect(filter.yHtmlDecode).to.be.ok();
         });
-        it('htmlDecode d test', function() {
-            expect(filter.d(null)).to.equal('null');
-            expect(filter.d()).to.equal('undefined');
-            expect(filter.d('&Aacute;&#0;&#x0D;&#x80;&#x82;&#x94;&#x9F;&#xD800;&#xFDD0;')).to.equal('&Aacute;\uFFFD\uFFFD\u20AC\u201A\u201D\u0178\uFFFD\uFFFD');
+        it('htmlDecode test', function() {
+            expect(filter.yHtmlDecode(null)).to.equal('');
+            expect(filter.yHtmlDecode()).to.equal('');
+            expect(filter.yHtmlDecode('&Aacute;&#0;&#x0D;&#x80;&#x82;&#x94;&#x9F;&#xD800;&#xFDD0;')).to.equal('&Aacute;\uFFFD\u000D\u20AC\u201A\u201D\u0178\uFFFD\uFDD0');
+            expect(filter.yHtmlDecode('&#x1F600')).to.equal('😀');
+            expect(filter.yHtmlDecode('&#39')).to.equal('\'');
+            expect(filter.yHtmlDecode('&lt&LT&lt;')).to.equal('<<<');
+            expect(filter.yHtmlDecode('&gta&gta;')).to.equal('>a>a;');
+            expect(filter.yHtmlDecode('&quot')).to.equal('"');
+            expect(filter.yHtmlDecode('&sol&sol;')).to.equal('&sol/');
+        });
+        it('htmlDecode invalid token test', function() {
+            expect(filter.yHtmlDecode('&123')).to.equal('&123');
+            expect(filter.yHtmlDecode('&#FF')).to.equal('&#FF');
+            expect(filter.yHtmlDecode('&#1F600')).to.equal('\x01F600');
+            expect(filter.yHtmlDecode('&#xYO;')).to.equal('&#xYO;');
+            expect(filter.yHtmlDecode('&yoyo&yoyo;')).to.equal('&yoyo&yoyo;');
         });
 
-        it('frCoPt exists', function() {
-            expect(filter.frCoPt).to.be.ok();
+        it('getProtocol exists', function() {
+            expect(filter.yup).to.be.ok();
         });
-        it('frCoPt test', function() {
-            expect(filter.frCoPt(null)).to.equal('');
-            expect(filter.frCoPt()).to.equal('');
-            expect(filter.frCoPt(0)).to.equal('\uFFFD');
-            expect(filter.frCoPt(10)).to.equal('\n');
-            expect(filter.frCoPt(0x0B)).to.equal('\uFFFD');
-            expect(filter.frCoPt(0x10FFFF)).to.equal('\uFFFD');
+        it('getProtocol test', function() {
+            expect(filter.yup('../asdf')).to.equal(null);
+            expect(filter.yup('//asdf/sadf')).to.equal(null);
+            expect(filter.yup('asdf:')).to.equal('asdf');
+            expect(filter.yup('\x00javascript:')).to.equal('javascript');
+            expect(filter.yup('&\x00#20;javascript:')).to.equal('javascript');
+            expect(filter.yup('java\x00script:')).to.equal('javascript');
+            // IE9 or below do not decode &#0, and so 'java&#0;script' will be resulted instead, and is thus non-scriptable
+            expect(filter.yup('java&#0;script:')).to.equal('java\uFFFDscript');
+            expect(filter.yup('&#0;javascript:')).to.equal('\uFFFDjavascript');
+            expect(filter.yup('&#000000000000000000000000000000000000000000000000000javascript:')).to.equal('\uFFFDjavascript');
+            expect(filter.yup('&#x0;javascript:')).to.equal('\uFFFDjavascript');
+            expect(filter.yup('&#x0javascript:')).to.equal('\uFFFDjavascript');
         });
     });
 
