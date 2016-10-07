@@ -20,12 +20,14 @@ exports._getPrivFilters = function () {
         SPECIAL_HTML_CHARS = /[&<>"'`]/g, 
         SPECIAL_COMMENT_CHARS = /(?:\x00|^-*!?>|--!?>|--?!?$|\]>|\]$)/g;
 
-    // CSS sensitive chars: ()"'/,!*@{}:;
-    // By CSS: (Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(quot|QUOT)
-    // By URI_PROTOCOL: (Tab|NewLine);
+    // Only a limited set of named references require decoding :
+    //  for CSS:                     (Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast);|(nbsp|quot|QUOT);?   // ref: PPSE-1742
+    //  for URI:                     (Tab|NewLine);    // colon; is decoded by URI_PROTOCOL_COLON
+    //  for generic html decoding:   (apos;|(lt|LT|gt|GT|amp|AMP|quot|QUOT);?)
     var SENSITIVE_HTML_ENTITIES = /&(?:#([xX][0-9A-Fa-f]+|\d+);?|(Tab|NewLine|colon|semi|lpar|rpar|apos|sol|comma|excl|ast|midast|ensp|emsp|thinsp);|(nbsp|amp|AMP|lt|LT|gt|GT|quot|QUOT);?)/g,
-        SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', lt: '<', gt: '>', quot: '"', QUOT: '"'};
+        SENSITIVE_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n', colon: ':', semi: ';', lpar: '(', rpar: ')', apos: '\'', sol: '/', comma: ',', excl: '!', ast: '*', midast: '*', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', nbsp: '\xA0', amp: '&', AMP: '&', lt: '<', LT: '<', gt: '>', GT: '>', quot: '"', QUOT: '"'};
 
+    // CSS sensitive chars: ()"'/,!*@{}:;
     // var CSS_VALID_VALUE = 
     //     /^(?:
     //     (?!-*expression)#?[-\w]+
@@ -61,15 +63,17 @@ exports._getPrivFilters = function () {
         URI_PROTOCOL_NAMED_REF_MAP = {Tab: '\t', NewLine: '\n'};
 
     var x, 
-        strReplace = function (s, regexp, callback) {
+        _strReplace = function (s, regexp, callback) {
             return s === undefined ? 'undefined'
-                    : s === null            ? 'null'
+                    : s === null   ? 'null'
                     : s.toString().replace(regexp, callback);
         },
+        // only the five basic contextual filters yd, yc, yavu, yavs, yavd will be relying on strReplace
+        strReplace = _strReplace,
         fromCodePoint = String.fromCodePoint || function(codePoint) {
-            if (arguments.length === 0) {
-                return '';
-            }
+            // the following is dead code as we always provide codePoint
+            // if (arguments.length === 0) { return ''; }
+
             if (codePoint <= 0xFFFF) { // BMP code point
                 return String.fromCharCode(codePoint);
             }
@@ -80,6 +84,29 @@ exports._getPrivFilters = function () {
             return String.fromCharCode((codePoint >> 10) + 0xD800, (codePoint % 0x400) + 0xDC00);
         };
 
+    // patch document.write() and document.writeln() to properly handle NULL for IE 9 or below
+    /*jshint -W030 */
+    typeof document !== 'undefined' && function () {
+        var doc=document,b=doc.createElement('b'),w=doc.write,wl=doc.writeln, patch;
+        b.innerHTML='\x001';
+        if (!b.innerHTML.length && w) {
+            patch = function(original) {
+                return function() {
+                    var args = arguments, i = 0, len = args.length, s;
+                    // replace every NULL char with \uFFFD in every argument
+                    for (; i < len; i++) {
+                        if (typeof (s = args[i]) === 'string') {
+                            args[i] = s.replace(NULL, '\uFFFD');
+                        }
+                    }
+                    return Function.prototype.apply.call(original, doc, args);
+                };
+            };
+            /*jshint -W030 */
+            doc.write = patch(w);
+            doc.writeln = patch(wl);
+        }
+    }();
 
     function getProtocol(str) {
         var s = str.split(URI_PROTOCOL_COLON, 2);
@@ -158,7 +185,7 @@ exports._getPrivFilters = function () {
                         : (num >= 0xD800 && num <= 0xDFFF) || num === 0x0D ? '\uFFFD'
                         : x.frCoPt(num);
             }
-            return namedRefMap[named || named1] || m;
+            return namedRefMap[named || named1];
         }
 
         return s === undefined  ? 'undefined'
@@ -184,6 +211,20 @@ exports._getPrivFilters = function () {
     }
 
     return (x = {
+        config: function(options) {
+            options = options || {};
+
+            if (options.replaceNull === true) {
+                // change strReplace so that it always replace NULL with \uFFFD at last if any
+                strReplace = function (s, regexp, callback) {
+                    return s === undefined ? 'undefined'
+                            : s === null   ? 'null'
+                            : s.toString().replace(regexp, callback).replace(NULL, '\uFFFD');
+                };
+            } else if (options.replaceNull === false) {
+                strReplace = _strReplace;
+            }
+        },
         // turn invalid codePoints and that of non-characters to \uFFFD, and then fromCodePoint()
         frCoPt: function(num) {
             return num === undefined || num === null ? '' :
@@ -219,7 +260,7 @@ exports._getPrivFilters = function () {
          *
          */
         y: function(s) {
-            return strReplace(s, SPECIAL_HTML_CHARS, function (m) {
+            return _strReplace(s, SPECIAL_HTML_CHARS, function (m) {
                 return m === '&' ? '&amp;'
                     :  m === '<' ? '&lt;'
                     :  m === '>' ? '&gt;'
@@ -231,7 +272,7 @@ exports._getPrivFilters = function () {
 
         // This filter is meant to introduce double-encoding, and should be used with extra care.
         ya: function(s) {
-            return strReplace(s, AMP, '&amp;');
+            return _strReplace(s, AMP, '&amp;');
         },
 
         // FOR DETAILS, refer to inHTMLData()

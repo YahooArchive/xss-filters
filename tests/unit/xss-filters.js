@@ -11,7 +11,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
     var filter = xssFilters;
 
-    delete filter._privFilters;
+    // delete filter._privFilters;
     delete filter._getPrivFilters;
 
     describe("xss-filters: existence tests", function() {
@@ -147,8 +147,10 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     describe("xss-filters: error tests", function() {
 
         it('filters handling of undefined input', function() {
-            for (var f in filter)
-                expect(filter[f]()).to.eql('undefined');
+            for (var f in filter) {
+                if (f !== '_privFilters')
+                    expect(filter[f]()).to.eql('undefined');
+            }
         });
     });
 
@@ -447,7 +449,45 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 '%60%60',  '%20%60%60', '%09%60%60', '%0A%60%60', '%0C%60%60']);
             testutils.test_yuc(filter.uriFragmentInUnQuotedAttr);
         });
-        
 
     });
+
+
+    describe("xss-filters: utility tests", function() {
+
+        it('config exists', function(){
+            expect(filter._privFilters.config).to.be.ok();
+        });
+        it('config test - replaceNull', function() {
+
+            var s = "foo&<>\"'` bar&<>\"' \x00\0&lt;";
+
+            var beforeConfigResult = [
+                filter.inHTMLData(s),
+                filter.inHTMLComment(s),
+                filter.inUnQuotedAttr(s),
+                filter.inDoubleQuotedAttr(s),
+                filter.inSingleQuotedAttr(s)
+            ];
+
+            filter._privFilters.config({replaceNull:true});
+            expect(filter.inHTMLData(s)).to.equal("foo&&lt;>\"'` bar&&lt;>\"' \uFFFD\uFFFD&lt;");
+            expect(filter.inHTMLComment(s)).to.equal("foo&<>\"'` bar&<>\"' \uFFFD\uFFFD&lt;");
+            expect(filter.inUnQuotedAttr(s)).to.equal("foo&&lt;&gt;&quot;&#39;&#96;&#32;bar&&lt;&gt;&quot;&#39;&#32;\uFFFD\uFFFD&lt;");
+            expect(filter.inDoubleQuotedAttr(s)).to.equal("foo&<>&quot;'` bar&<>&quot;' \uFFFD\uFFFD&lt;");
+            expect(filter.inSingleQuotedAttr(s)).to.equal("foo&<>\"&#39;` bar&<>\"&#39; \uFFFD\uFFFD&lt;");
+
+
+            filter._privFilters.config({replaceNull:false});
+            expect(filter.inHTMLData(s)).to.equal("foo&&lt;>\"'` bar&&lt;>\"' \x00\0&lt;");
+            expect(filter.inHTMLData(s)).to.equal(beforeConfigResult[0]);
+            expect(filter.inHTMLComment(s)).to.equal(beforeConfigResult[1]);
+            expect(filter.inUnQuotedAttr(s)).to.equal(beforeConfigResult[2]);
+            expect(filter.inDoubleQuotedAttr(s)).to.equal(beforeConfigResult[3]);
+            expect(filter.inSingleQuotedAttr(s)).to.equal(beforeConfigResult[4]);
+
+        });
+    });
+
+
 }());

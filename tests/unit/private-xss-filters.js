@@ -445,7 +445,23 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('htmlDecode d test', function() {
             expect(filter.d(null)).to.equal('null');
             expect(filter.d()).to.equal('undefined');
-            expect(filter.d('&Aacute;&#0;&#x0D;&#x80;&#x82;&#x94;&#x9F;&#xD800;&#xFDD0;')).to.equal('&Aacute;\uFFFD\uFFFD\u20AC\u201A\u201D\u0178\uFFFD\uFFFD');
+            expect(filter.d('&gta &GTA &Aacute;&#0;&#x0D;&#xD800;&#xFDD0;')).to.equal('>a >A &Aacute;\uFFFD\uFFFD\uFFFD\uFFFD');
+
+            var i, specialChar = [
+                /*\x80*/ '\u20AC', '\uFFFD', '\u201A', '\u0192', 
+                /*\x84*/ '\u201E', '\u2026', '\u2020', '\u2021', 
+                /*\x88*/ '\u02C6', '\u2030', '\u0160', '\u2039', 
+                /*\x8C*/ '\u0152', '\uFFFD', '\u017D', '\uFFFD',
+                /*\x90*/ '\uFFFD', '\u2018', '\u2019', '\u201C', 
+                /*\x94*/ '\u201D', '\u2022', '\u2013', '\u2014', 
+                /*\x98*/ '\u02DC', '\u2122', '\u0161', '\u203A', 
+                /*\x9C*/ '\u0153', '\uFFFD', '\u017E', '\u0178',
+            ];
+            for (i = 0x80; i <= 0x9F; i++) {
+                // console.log(i, '&#x' + i.toString(16) + ';', filter.d('&#x' + i.toString(16) + ';'), specialChar[i - 0x80])
+                expect(filter.d('&#x' + i.toString(16) + ';')).to.equal(specialChar[i - 0x80]);
+            }
+            
         });
 
         it('frCoPt exists', function() {
@@ -456,8 +472,47 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(filter.frCoPt()).to.equal('');
             expect(filter.frCoPt(0)).to.equal('\uFFFD');
             expect(filter.frCoPt(10)).to.equal('\n');
+            expect(filter.frCoPt(0x61)).to.equal('a');
+            expect(filter.frCoPt(0x1F600)).to.equal('😀');
             expect(filter.frCoPt(0x0B)).to.equal('\uFFFD');
             expect(filter.frCoPt(0x10FFFF)).to.equal('\uFFFD');
+        });
+
+        it('config exists', function(){
+            expect(filter.config).to.be.ok();
+            expect(filter.config()).not.to.be.ok();
+        });
+        it('config test - replaceNull', function() {
+
+            var s = "foo&<>\"'` bar&<>\"' \x00\0&lt;";
+
+            var beforeConfigResult = [
+                filter.yd(s),
+                filter.yc(s),
+                filter.yavu(s),
+                filter.yavd(s),
+                filter.yavs(s)
+            ];
+
+            filter.config({replaceNull:true});
+            expect(filter.yd()).to.eql('undefined');
+            expect(filter.yd(null)).to.eql('null');
+
+            expect(filter.yd(s)).to.equal("foo&&lt;>\"'` bar&&lt;>\"' \uFFFD\uFFFD&lt;");
+            expect(filter.yc(s)).to.equal("foo&<>\"'` bar&<>\"' \uFFFD\uFFFD&lt;");
+            expect(filter.yavu(s)).to.equal("foo&&lt;&gt;&quot;&#39;&#96;&#32;bar&&lt;&gt;&quot;&#39;&#32;\uFFFD\uFFFD&lt;");
+            expect(filter.yavd(s)).to.equal("foo&<>&quot;'` bar&<>&quot;' \uFFFD\uFFFD&lt;");
+            expect(filter.yavs(s)).to.equal("foo&<>\"&#39;` bar&<>\"&#39; \uFFFD\uFFFD&lt;");
+
+
+            filter.config({replaceNull:false});
+            expect(filter.yd(s)).to.equal("foo&&lt;>\"'` bar&&lt;>\"' \x00\0&lt;");
+            expect(filter.yd(s)).to.equal(beforeConfigResult[0]);
+            expect(filter.yc(s)).to.equal(beforeConfigResult[1]);
+            expect(filter.yavu(s)).to.equal(beforeConfigResult[2]);
+            expect(filter.yavd(s)).to.equal(beforeConfigResult[3]);
+            expect(filter.yavs(s)).to.equal(beforeConfigResult[4]);
+
         });
     });
 
